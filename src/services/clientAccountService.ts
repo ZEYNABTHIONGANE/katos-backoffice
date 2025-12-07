@@ -4,7 +4,7 @@ import {
   signOut
 } from 'firebase/auth';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
-import { clientAuth, db } from '../config/firebase';
+import { clientAuth, db, auth } from '../config/firebase';
 import type { FirebaseUser } from '../types/firebase';
 import { UserRole } from '../types/roles';
 
@@ -60,6 +60,9 @@ export class ClientAccountService {
         isTemporaryPassword: true
       };
 
+      // Utiliser l'instance admin pour écrire dans Firestore
+      // Temporairement, on écrit avec l'admin connecté sur l'instance principale
+      console.log('Sauvegarde avec admin auth:', auth.currentUser?.email);
       await setDoc(doc(db, 'users', newUser.uid), userData);
 
       // Déconnecter immédiatement l'instance client
@@ -76,6 +79,9 @@ export class ClientAccountService {
       };
     } catch (error: any) {
       console.error('Erreur lors de la création du compte client:', error);
+      console.error('Code erreur:', error.code);
+      console.error('Message erreur:', error.message);
+      console.error('Détails complets:', JSON.stringify(error, null, 2));
 
       let errorMessage = 'Erreur lors de la création du compte';
       if (error.code === 'auth/email-already-in-use') {
@@ -84,6 +90,14 @@ export class ClientAccountService {
         errorMessage = 'Le mot de passe généré est trop faible';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Email invalide';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Problème de réseau - vérifiez votre connexion';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Trop de tentatives - réessayez plus tard';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = 'Création de compte non autorisée - vérifiez la configuration Firebase';
+      } else {
+        errorMessage = `Erreur Firebase: ${error.code || 'inconnue'} - ${error.message || 'Pas de détails'}`;
       }
 
       return {

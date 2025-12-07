@@ -11,6 +11,9 @@ service cloud.firestore {
       // Allow authenticated users to read any user document for admin purposes
       allow read: if request.auth != null;
 
+      // Allow authenticated users (admins) to update user documents
+      allow update: if request.auth != null;
+
       // Special rule: Allow unauthenticated read for username lookup during login
       // This is necessary for mobile app username-based authentication
       // Only allow if the document has a username field (indicating it's a client account)

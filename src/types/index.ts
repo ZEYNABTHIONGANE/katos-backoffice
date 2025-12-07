@@ -94,3 +94,31 @@ export interface ProjectState {
   updateProject: (id: string, project: Partial<Project>) => void;
   deleteProject: (id: string) => void;
 }
+
+export interface ClientSelection {
+  id: string;
+  clientId: string;
+  clientName?: string;
+  chantierId?: string;
+  selections: {
+    materialId: string;
+    materialName: string;
+    materialCategory: string;
+    materialPrice: number;
+    materialImageUrl: string;
+    selectedAt: string;
+  }[];
+  totalAmount: number;
+  status: 'submitted' | 'under_review' | 'approved' | 'rejected';
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientSelectionState {
+  clientSelections: ClientSelection[];
+  updateSelectionStatus: (id: string, status: ClientSelection['status'], notes?: string) => void;
+}

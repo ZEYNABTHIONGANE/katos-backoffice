@@ -206,6 +206,37 @@ export class InvitationService {
         };
       }
 
+      // Vérifier si l'email est déjà utilisé dans Firebase Auth
+      // En consultant la collection users pour voir si un utilisateur avec cet email existe
+      const usersRef = collection(db, 'users');
+      const emailQuery = query(usersRef, where('email', '==', clientEmail));
+      const emailSnapshot = await getDocs(emailQuery);
+
+      if (!emailSnapshot.empty) {
+        // Un compte existe déjà avec cet email
+        const existingUserDoc = emailSnapshot.docs[0];
+        const existingUser = existingUserDoc.data();
+
+        // Si l'utilisateur existant est déjà lié à ce client, on peut récupérer ses infos
+        if (existingUser.clientId === clientId) {
+          // Mettre à jour le client avec l'userId existant
+          await updateDoc(clientRef, {
+            userId: existingUser.uid,
+            acceptedAt: existingUser.createdAt || Timestamp.now()
+          });
+
+          return {
+            success: false,
+            error: `Compte récupéré ! L'utilisateur était déjà créé avec l'identifiant: ${existingUser.username}`
+          };
+        } else {
+          return {
+            success: false,
+            error: 'Un compte Firebase existe déjà avec cet email mais lié à un autre client. Utilisez un autre email.'
+          };
+        }
+      }
+
       // Utiliser le nouveau service de création de comptes clients
       const { clientAccountService } = await import('./clientAccountService');
       const result = await clientAccountService.createClientAccount(
@@ -213,8 +244,6 @@ export class InvitationService {
         `${clientData.prenom} ${clientData.nom}`,
         clientId
       );
-
-      console.log('Résultat de createClientAccount:', result);
 
       if (result.success) {
         // Mettre à jour le client avec l'userId (l'admin est toujours connecté ✅)
@@ -239,8 +268,6 @@ Mot de passe: ${result.tempPassword}
 ⚠️ IMPORTANT:
 - Gardez ces informations confidentielles
 - Le mot de passe doit être changé à la première connexion`;
-
-        console.log('Credentials formatées:', credentials);
 
         return {
           success: true,

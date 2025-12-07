@@ -19,7 +19,7 @@ export class ClientService {
   private collectionName = 'clients';
 
   // Ajouter un nouveau client
-  async addClient(clientData: Omit<FirebaseClient, 'id' | 'createdAt' | 'invitationStatus'>): Promise<string> {
+  async addClient(clientData: Omit<FirebaseClient, 'id' | 'createdAt'>): Promise<string> {
     console.log('Ajout client dans Firebase:', clientData);
     const clientRef = collection(db, this.collectionName);
 
@@ -33,7 +33,8 @@ export class ClientService {
 
     const newClient = {
       ...cleanedData,
-      invitationStatus: 'pending' as const,
+      // invitationStatus est maintenant fourni dans cleanedData
+      status: cleanedData.status || 'En attente', // Valeur par défaut si non fournie
       createdAt: Timestamp.now()
     };
 
@@ -127,19 +128,63 @@ export class ClientService {
     const clientRef = collection(db, this.collectionName);
     const q = query(clientRef, orderBy('createdAt', 'desc'));
 
-    return onSnapshot(q, (snapshot) => {
-      console.log('Changement détecté dans la collection clients. Nombre de docs:', snapshot.docs.length);
-      const clients = snapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log('Document client:', doc.id, data);
-        return {
-          id: doc.id,
-          ...data
-        } as FirebaseClient;
-      });
-      console.log('Envoi des clients au callback:', clients.length);
-      callback(clients);
-    });
+    return onSnapshot(q,
+      (snapshot) => {
+        console.log('Changement détecté dans la collection clients. Nombre de docs:', snapshot.docs.length);
+        const clients = snapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('Document client:', doc.id, data);
+          return {
+            id: doc.id,
+            ...data
+          } as FirebaseClient;
+        });
+        console.log('Envoi des clients au callback:', clients.length);
+        callback(clients);
+      },
+      (error) => {
+        console.error('❌ Erreur dans l\'écoute des clients:', error);
+        // Callback avec une liste vide en cas d'erreur pour éviter de casser l'interface
+        console.log('📞 Envoi de liste vide au callback suite à l\'erreur');
+        callback([]);
+      }
+    );
+  }
+
+  // Fonction utilitaire pour corriger les statuts des clients existants
+  async fixClientStatuses(): Promise<{ updated: number; errors: number }> {
+    try {
+      console.log('🔧 Début de la correction des statuts clients...');
+      const clientsRef = collection(db, this.collectionName);
+      const snapshot = await getDocs(clientsRef);
+
+      let updated = 0;
+      let errors = 0;
+
+      for (const clientDoc of snapshot.docs) {
+        const data = clientDoc.data();
+
+        // Si le client a une invitation acceptée mais statut différent de "En cours"
+        if (data.invitationStatus === 'accepted' && data.status !== 'En cours') {
+          try {
+            await updateDoc(doc(db, this.collectionName, clientDoc.id), {
+              status: 'En cours'
+            });
+            console.log(`✅ Client ${clientDoc.id} mis à jour: ${data.status} → En cours`);
+            updated++;
+          } catch (error) {
+            console.error(`❌ Erreur mise à jour client ${clientDoc.id}:`, error);
+            errors++;
+          }
+        }
+      }
+
+      console.log(`🎉 Correction terminée: ${updated} clients mis à jour, ${errors} erreurs`);
+      return { updated, errors };
+    } catch (error) {
+      console.error('❌ Erreur lors de la correction des statuts:', error);
+      throw error;
+    }
   }
 }
 

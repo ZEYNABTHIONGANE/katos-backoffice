@@ -23,6 +23,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     nom: string;
     prenom: string;
     email: string;
+    telephone: string;
+    adresse: string;
     localisationSite: string;
     projetAdhere: string;
     status: 'En cours' | 'Terminé' | 'En attente';
@@ -30,6 +32,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     nom: '',
     prenom: '',
     email: '',
+    telephone: '',
+    adresse: '',
     localisationSite: '',
     projetAdhere: '',
     status: 'En attente',

@@ -22,6 +22,8 @@ export interface FirebaseClient {
   nom: string;
   prenom: string;
   email: string;
+  telephone: string;
+  adresse: string;
   localisationSite: string;
   projetAdhere: string;
   status: 'En cours' | 'Terminé' | 'En attente';

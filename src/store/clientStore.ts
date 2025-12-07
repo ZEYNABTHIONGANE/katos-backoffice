@@ -9,6 +9,8 @@ interface ClientForApp {
   nom: string;
   prenom: string;
   email: string;
+  telephone: string;
+  adresse: string;
   localisationSite: string;
   projetAdhere: string;
   status: 'En cours' | 'Terminé' | 'En attente';
@@ -34,31 +36,51 @@ interface FirebaseClientState {
 }
 
 // Fonction pour convertir FirebaseClient vers ClientForApp
-const convertFirebaseClient = (firebaseClient: FirebaseClient): ClientForApp => ({
-  id: firebaseClient.id!,
-  nom: firebaseClient.nom,
-  prenom: firebaseClient.prenom,
-  email: firebaseClient.email,
-  localisationSite: firebaseClient.localisationSite,
-  projetAdhere: firebaseClient.projetAdhere,
-  status: firebaseClient.status,
-  invitationStatus: firebaseClient.invitationStatus,
-  invitationToken: firebaseClient.invitationToken,
-  userId: firebaseClient.userId,
-  createdAt: firebaseClient.createdAt.toDate().toISOString().split('T')[0],
-  invitedAt: firebaseClient.invitedAt?.toDate().toISOString().split('T')[0],
-  acceptedAt: firebaseClient.acceptedAt?.toDate().toISOString().split('T')[0]
-});
+const convertFirebaseClient = (firebaseClient: FirebaseClient): ClientForApp => {
+  const originalStatus = (firebaseClient as any).status;
+  const invitationStatus = firebaseClient.invitationStatus;
+  const finalStatus = invitationStatus === 'accepted' ? 'En cours' : (originalStatus || 'En attente');
+
+  console.log(`🔄 Conversion client ${firebaseClient.id}:`, {
+    nom: firebaseClient.nom,
+    originalStatus,
+    invitationStatus,
+    finalStatus
+  });
+
+  return {
+    id: firebaseClient.id!,
+    nom: firebaseClient.nom,
+    prenom: firebaseClient.prenom,
+    email: firebaseClient.email,
+    telephone: firebaseClient.telephone || '',
+    adresse: firebaseClient.adresse || '',
+    localisationSite: firebaseClient.localisationSite,
+    projetAdhere: firebaseClient.projetAdhere,
+    // Logique métier pour le statut : "En cours" si invitation acceptée, sinon utiliser le statut existant ou "En attente"
+    status: finalStatus,
+    invitationStatus: firebaseClient.invitationStatus,
+    invitationToken: firebaseClient.invitationToken,
+    userId: firebaseClient.userId,
+    createdAt: firebaseClient.createdAt.toDate().toISOString().split('T')[0],
+    invitedAt: firebaseClient.invitedAt?.toDate().toISOString().split('T')[0],
+    acceptedAt: firebaseClient.acceptedAt?.toDate().toISOString().split('T')[0]
+  };
+};
 
 // Fonction pour convertir ClientForApp vers FirebaseClient
-const convertToFirebaseClient = (client: Omit<ClientForApp, 'id' | 'createdAt' | 'invitationStatus'>): Omit<FirebaseClient, 'id' | 'createdAt' | 'invitationStatus'> => {
+const convertToFirebaseClient = (client: Omit<ClientForApp, 'id' | 'createdAt'>): Omit<FirebaseClient, 'id' | 'createdAt'> => {
+  console.log('🔄 Conversion vers Firebase:', client);
   const firebaseClient: any = {
     nom: client.nom,
     prenom: client.prenom,
     email: client.email,
+    telephone: client.telephone,
+    adresse: client.adresse,
     localisationSite: client.localisationSite,
     projetAdhere: client.projetAdhere,
-    status: client.status
+    status: client.status,
+    invitationStatus: client.invitationStatus // Maintenant inclus dans les paramètres
   };
 
   // Ajouter seulement les champs non undefined
@@ -76,6 +98,16 @@ const convertToFirebaseClient = (client: Omit<ClientForApp, 'id' | 'createdAt' |
   }
 
   return firebaseClient;
+};
+
+// Fonction utilitaire pour corriger manuellement les statuts (pour debug)
+export const fixClientStatusesManually = async (): Promise<void> => {
+  try {
+    const result = await clientService.fixClientStatuses();
+    console.log(`Correction manuelle: ${result.updated} clients mis à jour, ${result.errors} erreurs`);
+  } catch (error) {
+    console.error('Erreur correction manuelle:', error);
+  }
 };
 
 export const useClientStore = create<FirebaseClientState>((set, get) => ({
@@ -147,16 +179,36 @@ export const useClientStore = create<FirebaseClientState>((set, get) => ({
     console.log('Initialisation des clients...');
     set({ loading: true, error: null });
 
+    // Corriger les statuts clients en arrière-plan (ne pas bloquer l'initialisation)
+    // TEMPORAIREMENT DÉSACTIVÉ POUR DEBUG
+    // clientService.fixClientStatuses()
+    //   .then(fixResult => {
+    //     if (fixResult.updated > 0) {
+    //       console.log(`✅ ${fixResult.updated} statuts clients corrigés`);
+    //     }
+    //   })
+    //   .catch(error => {
+    //     console.warn('⚠️ Erreur lors de la correction des statuts clients:', error);
+    //   });
+
     // Écouter les changements en temps réel
     const unsubscribe = clientService.subscribeToClients((firebaseClients) => {
-      console.log('Clients reçus de Firebase:', firebaseClients.length);
-      const convertedClients = firebaseClients.map(convertFirebaseClient);
-      console.log('Clients convertis:', convertedClients);
-      set({
-        clients: convertedClients,
-        loading: false,
-        error: null
-      });
+      try {
+        console.log('Clients reçus de Firebase:', firebaseClients.length);
+        const convertedClients = firebaseClients.map(convertFirebaseClient);
+        console.log('Clients convertis:', convertedClients);
+        set({
+          clients: convertedClients,
+          loading: false,
+          error: null
+        });
+      } catch (error) {
+        console.error('❌ Erreur lors de la conversion des clients:', error);
+        set({
+          loading: false,
+          error: 'Erreur lors de la conversion des données client'
+        });
+      }
     });
 
     // Stocker la fonction de nettoyage pour pouvoir l'appeler plus tard si nécessaire
