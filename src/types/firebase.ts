@@ -30,6 +30,9 @@ export interface FirebaseClient {
   invitationStatus: 'pending' | 'sent' | 'accepted' | 'declined';
   invitationToken?: string;
   userId?: string; // Lié à l'utilisateur une fois qu'il accepte l'invitation
+  username?: string; // Nom d'utilisateur généré pour la connexion
+  tempPassword?: string; // Mot de passe temporaire
+  typePaiement: 'comptant' | 'echeancier'; // Type de paiement
   createdAt: Timestamp;
   invitedAt?: Timestamp;
   acceptedAt?: Timestamp;
@@ -52,6 +55,8 @@ export interface FirebaseProject {
   description: string;
   images: string[];
   type: string;
+  price: number;
+  currency: string;
   createdAt: Timestamp;
 }
 

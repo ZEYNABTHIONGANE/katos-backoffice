@@ -27,6 +27,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     adresse: string;
     localisationSite: string;
     projetAdhere: string;
+    typePaiement: 'comptant' | 'echeancier';
     status: 'En cours' | 'Terminé' | 'En attente';
   }>({
     nom: '',
@@ -36,6 +37,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     adresse: '',
     localisationSite: '',
     projetAdhere: '',
+    typePaiement: 'comptant',
     status: 'En attente',
   });
 
@@ -48,8 +50,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         nom: client.nom || '',
         prenom: client.prenom || '',
         email: client.email || '',
+        telephone: client.telephone || '',
+        adresse: client.adresse || '',
         localisationSite: client.localisationSite || '',
         projetAdhere: client.projetAdhere || '',
+        typePaiement: client.typePaiement || 'comptant',
         status: client.status || 'En attente',
       });
     } else {
@@ -57,8 +62,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         nom: '',
         prenom: '',
         email: '',
+        telephone: '',
+        adresse: '',
         localisationSite: '',
         projetAdhere: '',
+        typePaiement: 'comptant',
         status: 'En attente',
       });
     }
@@ -98,8 +106,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       nom: '',
       prenom: '',
       email: '',
+      telephone: '',
+      adresse: '',
       localisationSite: '',
       projetAdhere: '',
+      typePaiement: 'comptant',
       status: 'En attente',
     });
     setErrors({});
@@ -142,6 +153,24 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           error={errors.email}
           placeholder="amadou.diallo@example.com"
         />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          <Input
+            label="Téléphone"
+            value={formData.telephone}
+            onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+            error={errors.telephone}
+            placeholder="+221 77 123 45 67"
+          />
+
+          <Input
+            label="Adresse"
+            value={formData.adresse}
+            onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
+            error={errors.adresse}
+            placeholder="Rue 10, Cité Keur Gorgui"
+          />
+        </div>
 
         <Input
           label="Localisation du site"
@@ -187,10 +216,38 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               <div>
                 <h5 className="font-medium text-gray-900 text-sm sm:text-base">{selectedProject.name}</h5>
                 <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2 sm:line-clamp-3">{selectedProject.description}</p>
+                {selectedProject.price && (
+                  <p className="text-sm font-semibold text-blue-600 mt-1">
+                    {new Intl.NumberFormat('fr-FR', {
+                      style: 'decimal',
+                      minimumFractionDigits: 0,
+                    }).format(selectedProject.price)} FCFA
+                  </p>
+                )}
               </div>
             </div>
           </div>
         )}
+
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-gray-900">
+            Type de paiement
+          </label>
+          <select
+            value={formData.typePaiement}
+            onChange={(e) => setFormData({ ...formData, typePaiement: e.target.value as 'comptant' | 'echeancier' })}
+            className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
+          >
+            <option value="comptant">Paiement comptant</option>
+            <option value="echeancier">Échéancier de paiement</option>
+          </select>
+          <p className="text-xs text-gray-500">
+            {formData.typePaiement === 'comptant'
+              ? 'Le client paiera la totalité en une fois'
+              : 'Le client paiera en plusieurs échéances selon le montant du projet'
+            }
+          </p>
+        </div>
 
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-gray-900">

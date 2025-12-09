@@ -9,12 +9,18 @@ export interface Client {
   nom: string;
   prenom: string;
   email: string;
+  telephone?: string;
+  adresse?: string;
   localisationSite: string;
   projetAdhere: string;
   status: 'En cours' | 'Terminé' | 'En attente';
   invitationStatus: 'pending' | 'sent' | 'accepted' | 'declined';
   invitationToken?: string;
   userId?: string;
+  username?: string;
+  tempPassword?: string;
+  // Facturation
+  typePaiement: 'comptant' | 'echeancier';
   createdAt: string;
   invitedAt?: string;
   acceptedAt?: string;
@@ -26,6 +32,9 @@ export interface Project {
   description: string;
   images: string[];
   type: string;
+  // Facturation
+  price: number; // Prix du projet en FCFA
+  currency: string; // 'FCFA'
 }
 
 export interface Material {
@@ -122,3 +131,70 @@ export interface ClientSelectionState {
   clientSelections: ClientSelection[];
   updateSelectionStatus: (id: string, status: ClientSelection['status'], notes?: string) => void;
 }
+
+// Système de facturation
+export interface EcheancePaiement {
+  id: string;
+  clientId: string;
+  projectId: string;
+  numeroEcheance: number; // 1, 2, 3, etc.
+  montant: number;
+  dateEcheance: string;
+  datePaiement?: string;
+  status: 'en_attente' | 'paye' | 'en_retard';
+  methodePaiement?: 'especes' | 'virement' | 'cheque' | 'mobile_money';
+  referencePaiement?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FacturationClient {
+  id: string;
+  clientId: string;
+  projectId: string;
+  montantTotal: number;
+  typePaiement: 'comptant' | 'echeancier';
+  // Pour paiement comptant
+  montantPaye?: number;
+  datePaiementComptant?: string;
+  // Pour échéancier
+  nombreEcheances?: number;
+  montantParEcheance?: number;
+  premierePaiement?: string; // Date du premier paiement
+  echeances?: EcheancePaiement[];
+  status: 'en_cours' | 'termine' | 'en_retard';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FacturationState {
+  facturations: FacturationClient[];
+  echeances: EcheancePaiement[];
+  addFacturation: (facturation: Omit<FacturationClient, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateEcheanceStatus: (id: string, status: EcheancePaiement['status'], datePaiement?: string) => void;
+  getEcheancesClient: (clientId: string) => EcheancePaiement[];
+}
+
+// Re-export des types pour la facturation moderne
+export type {
+  Invoice,
+  PaymentHistory,
+  PaymentSchedule,
+  ClientPaymentDashboard,
+  InvoiceItem,
+  PaymentInstallment
+} from './billing';
+
+// Re-export des types pour les documents unifiés
+export type {
+  UnifiedDocument,
+  DocumentNotification,
+  DocumentStats,
+  UnifiedDocumentType,
+  DocumentSource,
+  DocumentVisibility,
+  DocumentStatus,
+  DocumentCategory,
+  DocumentUploadConfig
+} from './documents';

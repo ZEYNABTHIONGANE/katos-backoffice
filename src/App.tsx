@@ -13,6 +13,7 @@ import { Chantiers } from './pages/Chantiers';
 import { ChantierDetail } from './pages/ChantierDetail';
 import { Boutique } from './pages/Boutique';
 import { Users } from './pages/Users';
+import { Billing } from './pages/Billing';
 import { Settings } from './pages/Settings';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -40,6 +41,7 @@ function App() {
                 <Route path="chantiers" element={<Chantiers />} />
                 <Route path="chantiers/:id" element={<ChantierDetail />} />
                 <Route path="boutique" element={<Boutique />} />
+                <Route path="facturation" element={<Billing />} />
                 <Route path="users" element={<Users />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

@@ -24,6 +24,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     type: '',
     description: '',
     images: [],
+    price: '',
+    currency: 'FCFA',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -36,6 +38,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         type: project.type || '',
         description: project.description || '',
         images: project.images || [],
+        price: project.price ? project.price.toString() : '',
+        currency: project.currency || 'FCFA',
       });
     } else {
       setFormData({
@@ -43,6 +47,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         type: '',
         description: '',
         images: [],
+        price: '',
+        currency: 'FCFA',
       });
     }
     setErrors({});
@@ -57,13 +63,18 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     if (!formData.type) newErrors.type = 'Le type est requis';
     if (!formData.description) newErrors.description = 'La description est requise';
     if (!formData.images || formData.images.length === 0) newErrors.images = 'Au moins une image est requise';
+    const priceNum = parseInt(formData.price);
+    if (!formData.price || isNaN(priceNum) || priceNum <= 0) newErrors.price = 'Le prix doit être supérieur à 0';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      price: parseInt(formData.price) || 0
+    });
     handleClose();
   };
 
@@ -73,6 +84,8 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       type: '',
       description: '',
       images: [],
+      price: '',
+      currency: 'FCFA',
     });
     setErrors({});
     onClose();
@@ -86,7 +99,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       size="lg"
     >
       <div className="space-y-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <Input
               label="Nom du projet"
@@ -118,6 +131,30 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                 <p className="text-red-600 text-xs mt-1">{errors.type}</p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-900">
+              Prix du projet
+            </label>
+            <div className="relative">
+              <Input
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                error={errors.price}
+                placeholder="Prix du projet"
+                min="1"
+                step="1000"
+                inputMode="numeric"
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 text-sm font-medium">FCFA</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Prix total du projet en francs CFA. Ce montant sera utilisé pour calculer les échéances de paiement.
+            </p>
           </div>
 
           {/* Section Upload Images */}

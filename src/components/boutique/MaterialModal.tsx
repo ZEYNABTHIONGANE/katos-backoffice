@@ -23,7 +23,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    price: 0,
+    price: '' as any,
     image: '',
     supplier: '',
     description: '',
@@ -50,7 +50,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
       setFormData({
         name: '',
         category: '',
-        price: 0,
+        price: '',
         image: '',
         supplier: '',
         description: '',
@@ -111,7 +111,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
 
       if (!formData.name) newErrors.name = 'Le nom est requis';
       if (!formData.category) newErrors.category = 'La catégorie est requise';
-      if (!formData.price || formData.price <= 0) newErrors.price = 'Le prix doit être supérieur à 0';
+      if (!formData.price || Number(formData.price) <= 0) newErrors.price = 'Le prix doit être supérieur à 0';
       if (!formData.supplier) newErrors.supplier = 'Le fournisseur est requis';
       if (!formData.description) newErrors.description = 'La description est requise';
 
@@ -130,6 +130,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
 
       const materialData = {
         ...formData,
+        price: Number(formData.price),
         image: finalImageUrl
       };
 
@@ -146,7 +147,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
     setFormData({
       name: '',
       category: '',
-      price: 0,
+      price: '',
       image: '',
       supplier: '',
       description: '',
@@ -202,7 +203,7 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
             label="Prix (FCFA)"
             type="number"
             value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+            onChange={(e) => setFormData({ ...formData, price: e.target.value ? Number(e.target.value) : '' })}
             error={errors.price}
             placeholder="25000"
             min="0"

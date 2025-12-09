@@ -1,30 +1,31 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { chantierService } from '../../services/chantierService';
 import { userService } from '../../services/userService';
 import { useClientStore } from '../../store/clientStore';
 import { useProjectStore } from '../../store/projectStore';
-import { useAuthStore } from '../../store/authStore';
 import { UserRole } from '../../types/roles';
 import type { FirebaseUser } from '../../types/firebase';
+import { chantierService } from '../../services/chantierService';
 import { toast } from 'react-toastify';
 
 interface ChantierModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  chantier?: any; // Chantier à modifier (undefined pour création)
 }
 
 export const ChantierModal: React.FC<ChantierModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  chantier
 }) => {
   const { clients } = useClientStore();
   const { projects } = useProjectStore();
-  const { user } = useAuthStore();
   const [chefs, setChefs] = useState<FirebaseUser[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -57,6 +58,33 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     }
   }, [isOpen]);
 
+  // Initialiser le formulaire avec les données du chantier en mode édition
+  useEffect(() => {
+    if (chantier && isOpen) {
+      setFormData({
+        clientId: chantier.clientId || '',
+        projectTemplateId: chantier.projectTemplateId || '',
+        name: chantier.name || '',
+        address: chantier.address || '',
+        assignedChefId: chantier.assignedChefId || '',
+        startDate: chantier.startDate ? chantier.startDate.toDate().toISOString().split('T')[0] : '',
+        plannedEndDate: chantier.plannedEndDate ? chantier.plannedEndDate.toDate().toISOString().split('T')[0] : ''
+      });
+    } else if (!chantier && isOpen) {
+      // Réinitialiser pour un nouveau chantier
+      setFormData({
+        clientId: '',
+        projectTemplateId: '',
+        name: '',
+        address: '',
+        assignedChefId: '',
+        startDate: '',
+        plannedEndDate: ''
+      });
+    }
+    setErrors({});
+  }, [chantier, isOpen]);
+
   // Mettre à jour automatiquement le nom du chantier basé sur le client et projet sélectionnés
   useEffect(() => {
     if (formData.clientId && formData.projectTemplateId) {
@@ -86,8 +114,11 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     // Validation
     const newErrors: Record<string, string> = {};
 
-    if (!formData.clientId) newErrors.clientId = 'Le client est requis';
-    if (!formData.projectTemplateId) newErrors.projectTemplateId = 'Le projet template est requis';
+    // Ces champs sont requis seulement en mode création
+    if (!chantier) {
+      if (!formData.clientId) newErrors.clientId = 'Le client est requis';
+      if (!formData.projectTemplateId) newErrors.projectTemplateId = 'Le projet template est requis';
+    }
     if (!formData.name) newErrors.name = 'Le nom du chantier est requis';
     if (!formData.address) newErrors.address = 'L\'adresse du chantier est requise';
     if (!formData.assignedChefId) newErrors.assignedChefId = 'Le chef de chantier est requis';
@@ -111,25 +142,38 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     try {
       setLoading(true);
 
-      const chantierId = await chantierService.createChantierFromTemplate(
-        formData.clientId,
-        formData.projectTemplateId,
-        {
+      if (chantier) {
+        // Mode édition - Mise à jour du chantier existant
+        await chantierService.updateChantier(chantier.id, {
           name: formData.name,
           address: formData.address,
           assignedChefId: formData.assignedChefId,
-          startDate: new Date(formData.startDate),
-          plannedEndDate: new Date(formData.plannedEndDate)
-        },
-        user?.uid || 'system'
-      );
+          // startDate: new Date(formData.startDate),
+          // plannedEndDate: new Date(formData.plannedEndDate)
+        });
+        toast.success('Chantier modifié avec succès!');
+      } else {
+        // Mode création - Créer un nouveau chantier
+        await chantierService.createChantierFromTemplate(
+          formData.clientId,
+          formData.projectTemplateId,
+          {
+            name: formData.name,
+            address: formData.address,
+            assignedChefId: formData.assignedChefId,
+            startDate: new Date(formData.startDate),
+            plannedEndDate: new Date(formData.plannedEndDate)
+          },
+          'admin' // TODO: Récupérer l'ID de l'utilisateur connecté
+        );
+        toast.success('Chantier créé avec succès!');
+      }
 
-      toast.success('Chantier créé avec succès!');
       handleClose();
       onSuccess();
     } catch (error: any) {
-      console.error('Erreur lors de la création du chantier:', error);
-      toast.error(error.message || 'Erreur lors de la création du chantier');
+      console.error('Erreur lors de la sauvegarde du chantier:', error);
+      toast.error(error.message || `Erreur lors de la ${chantier ? 'modification' : 'création'} du chantier`);
     } finally {
       setLoading(false);
     }
@@ -156,7 +200,7 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Nouveau chantier"
+      title={chantier ? "Modifier le projet" : "Nouveau projet"}
       size="lg"
     >
       <div className="space-y-6">
@@ -170,7 +214,8 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
             <select
               value={formData.clientId}
               onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-              className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
+              disabled={!!chantier} // Désactiver en mode édition
+              className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="">Sélectionner un client</option>
               {availableClients.map((client) => (
@@ -187,17 +232,18 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
           {/* Sélection du projet template */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-900">
-              Projet template *
+              Projet *
             </label>
             <select
               value={formData.projectTemplateId}
               onChange={(e) => setFormData({ ...formData, projectTemplateId: e.target.value })}
-              className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
+              disabled={!!chantier} // Désactiver en mode édition
+              className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="">Sélectionner un projet</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
-                  {project.name} {project.type} - {project.duration}j - {project.price}€
+                  {project.name} {project.type}
                 </option>
               ))}
             </select>
@@ -208,16 +254,16 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
 
           {/* Nom du chantier */}
           <Input
-            label="Nom du chantier *"
+            label="Nom du projet *"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             error={errors.name}
-            placeholder="Chantier Moussa Diop - Villa Moderne"
+            placeholder="Projet Villa Fatima F6"
           />
 
           {/* Adresse du chantier */}
           <Input
-            label="Adresse du chantier *"
+            label="Adresse du projet *"
             value={formData.address}
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             error={errors.address}
@@ -227,14 +273,14 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
           {/* Chef de chantier assigné */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-900">
-              Chef de chantier *
+              Chef de projet *
             </label>
             <select
               value={formData.assignedChefId}
               onChange={(e) => setFormData({ ...formData, assignedChefId: e.target.value })}
               className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
             >
-              <option value="">Sélectionner un chef de chantier</option>
+              <option value="">Sélectionner un chef de projet</option>
               {chefs.map((chef) => {
                 let roleLabel = '';
                 if (chef.role === UserRole.CHEF) {
@@ -296,7 +342,10 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
               className="w-full sm:w-auto order-1 sm:order-2"
               disabled={loading}
             >
-              {loading ? 'Création...' : 'Créer le chantier'}
+              {loading
+                ? (chantier ? 'Modification...' : 'Création...')
+                : (chantier ? 'Modifier le projet' : 'Créer le projet')
+              }
             </Button>
           </div>
         </form>

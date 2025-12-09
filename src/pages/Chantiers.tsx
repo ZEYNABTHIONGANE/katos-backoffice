@@ -1,22 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, MapPin, User, Calendar, BarChart3, Search, Filter } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from 'react';
+import { Plus, MapPin, User, Calendar, BarChart3, Search, Filter, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { ChantierModal } from '../components/chantiers/ChantierModal';
-import { chantierService } from '../services/chantierService';
-import type { FirebaseChantier, ChantierStatus } from '../types/chantier';
-import { useAuthStore } from '../store/authStore';
+import type { ChantierStatus } from '../types/chantier';
 import { useRealtimeChantiers } from '../hooks/useRealtimeChantiers';
 import { useUserNames } from '../hooks/useUserNames';
+import { useConfirm } from '../hooks/useConfirm';
+import { chantierService } from '../services/chantierService';
+import { toast } from 'react-toastify';
 
 export const Chantiers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ChantierStatus | 'Tous'>('Tous');
   const [isChantierModalOpen, setIsChantierModalOpen] = useState(false);
-  const { user } = useAuthStore();
+  const [selectedChantier, setSelectedChantier] = useState<any>(null);
+
   const navigate = useNavigate();
 
   // Utiliser le hook pour les données temps réel
@@ -43,6 +46,39 @@ export const Chantiers: React.FC = () => {
   }, [chantiers]);
 
   const { getUserName } = useUserNames(chefIds);
+  const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
+
+  // Gestion des actions
+  const handleEditChantier = (chantier: any) => {
+    setSelectedChantier(chantier);
+    setIsChantierModalOpen(true);
+  };
+
+  const handleDeleteChantier = (chantier: any) => {
+    confirm(
+      async () => {
+        try {
+          await chantierService.deleteChantier(chantier.id);
+          toast.success('Chantier supprimé avec succès');
+        } catch (error) {
+          console.error('Erreur lors de la suppression:', error);
+          toast.error('Erreur lors de la suppression du chantier');
+        }
+      },
+      {
+        title: 'Supprimer le chantier',
+        message: `Êtes-vous sûr de vouloir supprimer le chantier "${chantier.name}" ? Cette action est irréversible.`,
+        confirmText: 'Supprimer',
+        cancelText: 'Annuler',
+        type: 'danger'
+      }
+    );
+  };
+
+  const handleCloseModal = () => {
+    setIsChantierModalOpen(false);
+    setSelectedChantier(null);
+  };
 
   // Filtrer les chantiers
   const filteredChantiers = chantiers.filter(chantier => {
@@ -80,13 +116,13 @@ export const Chantiers: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Chantiers</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Projets</h1>
           </div>
-          <p className="text-gray-600 mt-1">Gestion des chantiers de construction</p>
+          <p className="text-gray-600 mt-1">Gestion des projets de construction</p>
         </div>
         <Button onClick={() => setIsChantierModalOpen(true)} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
-          Nouveau chantier
+          Nouveau projet
         </Button>
       </div>
 
@@ -142,7 +178,7 @@ export const Chantiers: React.FC = () => {
       {/* Liste des chantiers */}
       {loading ? (
         <Card className="p-8">
-          <div className="text-center text-gray-500">Chargement des chantiers en temps réel...</div>
+          <div className="text-center text-gray-500">Chargement des projets en temps réel...</div>
         </Card>
       ) : error ? (
         <Card className="p-8">
@@ -232,6 +268,24 @@ export const Chantiers: React.FC = () => {
                     <BarChart3 className="w-4 h-4 mr-1" />
                     Voir détails
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditChantier(chantier)}
+                    className="px-3"
+                    title="Modifier"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDeleteChantier(chantier)}
+                    className="px-3"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -248,14 +302,29 @@ export const Chantiers: React.FC = () => {
         </Card>
       )}
 
-      {/* Modal de création de chantier */}
+      {/* Modal de création/édition de chantier */}
       <ChantierModal
         isOpen={isChantierModalOpen}
-        onClose={() => setIsChantierModalOpen(false)}
+        onClose={handleCloseModal}
+        chantier={selectedChantier}
         onSuccess={() => {
           // Pas besoin de recharger - la liste se met à jour automatiquement via le listener temps réel
-          console.log('✅ Chantier créé - mise à jour automatique en cours...');
+          console.log('✅ Projet créé/modifié - mise à jour automatique en cours...');
+          handleCloseModal();
         }}
+      />
+
+      {/* Modal de confirmation */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        type={confirmState.type}
+        loading={confirmState.loading}
       />
     </div>
   );

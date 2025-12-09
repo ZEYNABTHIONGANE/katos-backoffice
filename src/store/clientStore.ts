@@ -17,6 +17,9 @@ interface ClientForApp {
   invitationStatus: 'pending' | 'sent' | 'accepted' | 'declined';
   invitationToken?: string;
   userId?: string;
+  username?: string;
+  tempPassword?: string;
+  typePaiement: 'comptant' | 'echeancier';
   createdAt: string;
   invitedAt?: string;
   acceptedAt?: string;
@@ -37,67 +40,134 @@ interface FirebaseClientState {
 
 // Fonction pour convertir FirebaseClient vers ClientForApp
 const convertFirebaseClient = (firebaseClient: FirebaseClient): ClientForApp => {
-  const originalStatus = (firebaseClient as any).status;
-  const invitationStatus = firebaseClient.invitationStatus;
-  const finalStatus = invitationStatus === 'accepted' ? 'En cours' : (originalStatus || 'En attente');
+  // Gestion sécurisée du statut
+  let finalStatus: 'En cours' | 'Terminé' | 'En attente';
 
-  console.log(`🔄 Conversion client ${firebaseClient.id}:`, {
-    nom: firebaseClient.nom,
-    originalStatus,
-    invitationStatus,
-    finalStatus
-  });
+  try {
+    const originalStatus = firebaseClient.status;
+    const invitationStatus = firebaseClient.invitationStatus;
 
-  return {
-    id: firebaseClient.id!,
-    nom: firebaseClient.nom,
-    prenom: firebaseClient.prenom,
-    email: firebaseClient.email,
-    telephone: firebaseClient.telephone || '',
-    adresse: firebaseClient.adresse || '',
-    localisationSite: firebaseClient.localisationSite,
-    projetAdhere: firebaseClient.projetAdhere,
-    // Logique métier pour le statut : "En cours" si invitation acceptée, sinon utiliser le statut existant ou "En attente"
-    status: finalStatus,
-    invitationStatus: firebaseClient.invitationStatus,
-    invitationToken: firebaseClient.invitationToken,
-    userId: firebaseClient.userId,
-    createdAt: firebaseClient.createdAt.toDate().toISOString().split('T')[0],
-    invitedAt: firebaseClient.invitedAt?.toDate().toISOString().split('T')[0],
-    acceptedAt: firebaseClient.acceptedAt?.toDate().toISOString().split('T')[0]
-  };
+    // Logique métier: Si invitation acceptée -> En cours, sinon utiliser le statut existant ou défaut
+    if (invitationStatus === 'accepted') {
+      finalStatus = 'En cours';
+    } else {
+      finalStatus = originalStatus || 'En attente';
+    }
+
+    console.log(`🔄 Conversion client ${firebaseClient.id}:`, {
+      nom: firebaseClient.nom,
+      originalStatus,
+      invitationStatus,
+      finalStatus
+    });
+  } catch (error) {
+    console.error(`❌ Erreur conversion client ${firebaseClient.id}:`, error);
+    finalStatus = 'En attente'; // Valeur par défaut sécurisée
+  }
+
+  try {
+    return {
+      id: firebaseClient.id!,
+      nom: firebaseClient.nom || '',
+      prenom: firebaseClient.prenom || '',
+      email: firebaseClient.email || '',
+      telephone: firebaseClient.telephone || '',
+      adresse: firebaseClient.adresse || '',
+      localisationSite: firebaseClient.localisationSite || '',
+      projetAdhere: firebaseClient.projetAdhere || '',
+      status: finalStatus,
+      invitationStatus: firebaseClient.invitationStatus || 'pending',
+      invitationToken: firebaseClient.invitationToken || undefined,
+      userId: firebaseClient.userId || undefined,
+      username: firebaseClient.username || undefined,
+      tempPassword: firebaseClient.tempPassword || undefined,
+      typePaiement: firebaseClient.typePaiement || 'comptant',
+      createdAt: firebaseClient.createdAt?.toDate?.()?.toISOString?.()?.split?.('T')?.[0] || new Date().toISOString().split('T')[0],
+      invitedAt: firebaseClient.invitedAt?.toDate?.()?.toISOString?.()?.split?.('T')?.[0] || undefined,
+      acceptedAt: firebaseClient.acceptedAt?.toDate?.()?.toISOString?.()?.split?.('T')?.[0] || undefined
+    };
+  } catch (error) {
+    console.error(`❌ Erreur lors de la conversion finale du client ${firebaseClient.id}:`, error);
+    // Retourner un objet minimal valide en cas d'erreur
+    return {
+      id: firebaseClient.id || 'unknown',
+      nom: firebaseClient.nom || 'Inconnu',
+      prenom: firebaseClient.prenom || '',
+      email: firebaseClient.email || '',
+      telephone: '',
+      adresse: '',
+      localisationSite: '',
+      projetAdhere: '',
+      status: 'En attente' as const,
+      invitationStatus: 'pending' as const,
+      invitationToken: undefined,
+      userId: undefined,
+      username: undefined,
+      tempPassword: undefined,
+      typePaiement: 'comptant' as const,
+      createdAt: new Date().toISOString().split('T')[0],
+      invitedAt: undefined,
+      acceptedAt: undefined
+    };
+  }
 };
 
 // Fonction pour convertir ClientForApp vers FirebaseClient
 const convertToFirebaseClient = (client: Omit<ClientForApp, 'id' | 'createdAt'>): Omit<FirebaseClient, 'id' | 'createdAt'> => {
   console.log('🔄 Conversion vers Firebase:', client);
-  const firebaseClient: any = {
-    nom: client.nom,
-    prenom: client.prenom,
-    email: client.email,
-    telephone: client.telephone,
-    adresse: client.adresse,
-    localisationSite: client.localisationSite,
-    projetAdhere: client.projetAdhere,
-    status: client.status,
-    invitationStatus: client.invitationStatus // Maintenant inclus dans les paramètres
-  };
 
-  // Ajouter seulement les champs non undefined
-  if (client.invitationToken) {
-    firebaseClient.invitationToken = client.invitationToken;
-  }
-  if (client.userId) {
-    firebaseClient.userId = client.userId;
-  }
-  if (client.invitedAt) {
-    firebaseClient.invitedAt = Timestamp.fromDate(new Date(client.invitedAt));
-  }
-  if (client.acceptedAt) {
-    firebaseClient.acceptedAt = Timestamp.fromDate(new Date(client.acceptedAt));
-  }
+  try {
+    const firebaseClient: any = {
+      nom: client.nom || '',
+      prenom: client.prenom || '',
+      email: client.email || '',
+      telephone: client.telephone || '',
+      adresse: client.adresse || '',
+      localisationSite: client.localisationSite || '',
+      projetAdhere: client.projetAdhere || '',
+      status: client.status || 'En attente',
+      invitationStatus: client.invitationStatus || 'pending',
+      typePaiement: client.typePaiement || 'comptant'
+    };
 
-  return firebaseClient;
+    // Ajouter seulement les champs non undefined
+    if (client.invitationToken) {
+      firebaseClient.invitationToken = client.invitationToken;
+    }
+    if (client.userId) {
+      firebaseClient.userId = client.userId;
+    }
+    if (client.username) {
+      firebaseClient.username = client.username;
+    }
+    if (client.tempPassword) {
+      firebaseClient.tempPassword = client.tempPassword;
+    }
+    if (client.invitedAt) {
+      firebaseClient.invitedAt = Timestamp.fromDate(new Date(client.invitedAt));
+    }
+    if (client.acceptedAt) {
+      firebaseClient.acceptedAt = Timestamp.fromDate(new Date(client.acceptedAt));
+    }
+
+    console.log('✅ Conversion vers Firebase réussie:', firebaseClient);
+    return firebaseClient;
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la conversion vers Firebase:', error);
+    // Retourner un objet minimal valide
+    return {
+      nom: client.nom || '',
+      prenom: client.prenom || '',
+      email: client.email || '',
+      telephone: client.telephone || '',
+      adresse: client.adresse || '',
+      localisationSite: client.localisationSite || '',
+      projetAdhere: client.projetAdhere || '',
+      status: 'En attente' as const,
+      invitationStatus: 'pending' as const
+    };
+  }
 };
 
 // Fonction utilitaire pour corriger manuellement les statuts (pour debug)
@@ -141,12 +211,17 @@ export const useClientStore = create<FirebaseClientState>((set, get) => ({
       if (updates.nom) firebaseUpdates.nom = updates.nom;
       if (updates.prenom) firebaseUpdates.prenom = updates.prenom;
       if (updates.email) firebaseUpdates.email = updates.email;
+      if (updates.telephone) firebaseUpdates.telephone = updates.telephone;
+      if (updates.adresse) firebaseUpdates.adresse = updates.adresse;
       if (updates.localisationSite) firebaseUpdates.localisationSite = updates.localisationSite;
       if (updates.projetAdhere) firebaseUpdates.projetAdhere = updates.projetAdhere;
       if (updates.status) firebaseUpdates.status = updates.status;
       if (updates.invitationStatus) firebaseUpdates.invitationStatus = updates.invitationStatus;
       if (updates.invitationToken) firebaseUpdates.invitationToken = updates.invitationToken;
       if (updates.userId) firebaseUpdates.userId = updates.userId;
+      if (updates.username) firebaseUpdates.username = updates.username;
+      if (updates.tempPassword) firebaseUpdates.tempPassword = updates.tempPassword;
+      if (updates.typePaiement) firebaseUpdates.typePaiement = updates.typePaiement;
 
       await clientService.updateClient(id, firebaseUpdates);
       set({ loading: false });

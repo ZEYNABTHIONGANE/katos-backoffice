@@ -18,30 +18,74 @@ import type { FirebaseClient } from '../types/firebase';
 export class ClientService {
   private collectionName = 'clients';
 
+  // Tester la connexion Firestore
+  async testConnection(): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('🔍 Test de connexion Firestore...');
+      const clientRef = collection(db, this.collectionName);
+      const q = query(clientRef, orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      console.log('✅ Connexion Firestore OK - ' + snapshot.docs.length + ' documents trouvés');
+      return { success: true };
+    } catch (error: any) {
+      console.error('❌ Échec du test de connexion Firestore:', error);
+
+      if (error.message?.includes('ERR_BLOCKED_BY_CLIENT') ||
+          error.code === 'network-request-failed' ||
+          error.message?.includes('Failed to fetch')) {
+        return {
+          success: false,
+          error: 'Connexion bloquée par le navigateur. Vérifiez vos extensions (ad-blockers).'
+        };
+      }
+
+      return {
+        success: false,
+        error: error.message || 'Erreur de connexion inconnue'
+      };
+    }
+  }
+
   // Ajouter un nouveau client
   async addClient(clientData: Omit<FirebaseClient, 'id' | 'createdAt'>): Promise<string> {
-    console.log('Ajout client dans Firebase:', clientData);
-    const clientRef = collection(db, this.collectionName);
+    try {
+      console.log('Ajout client dans Firebase:', clientData);
+      const clientRef = collection(db, this.collectionName);
 
-    // Nettoyer les valeurs undefined
-    const cleanedData: any = {};
-    Object.entries(clientData).forEach(([key, value]) => {
-      if (value !== undefined) {
-        cleanedData[key] = value;
+      // Nettoyer les valeurs undefined
+      const cleanedData: any = {};
+      Object.entries(clientData).forEach(([key, value]) => {
+        if (value !== undefined) {
+          cleanedData[key] = value;
+        }
+      });
+
+      const newClient = {
+        ...cleanedData,
+        // invitationStatus est maintenant fourni dans cleanedData
+        status: cleanedData.status || 'En attente', // Valeur par défaut si non fournie
+        createdAt: Timestamp.now()
+      };
+
+      console.log('Données nettoyées pour Firebase:', newClient);
+      const docRef = await addDoc(clientRef, newClient);
+      console.log('Client ajouté avec ID:', docRef.id);
+      return docRef.id;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de l\'ajout du client:', error);
+
+      // Gérer spécifiquement l'erreur ERR_BLOCKED_BY_CLIENT
+      if (error.message?.includes('ERR_BLOCKED_BY_CLIENT') ||
+          error.code === 'network-request-failed' ||
+          error.message?.includes('Failed to fetch')) {
+
+        console.error('🚫 Connexion Firestore bloquée - vérifiez vos extensions de navigateur');
+        throw new Error('Connexion bloquée par le navigateur. Désactivez temporairement vos extensions (ad-blockers) et réessayez.');
       }
-    });
 
-    const newClient = {
-      ...cleanedData,
-      // invitationStatus est maintenant fourni dans cleanedData
-      status: cleanedData.status || 'En attente', // Valeur par défaut si non fournie
-      createdAt: Timestamp.now()
-    };
-
-    console.log('Données nettoyées pour Firebase:', newClient);
-    const docRef = await addDoc(clientRef, newClient);
-    console.log('Client ajouté avec ID:', docRef.id);
-    return docRef.id;
+      // Re-lancer l'erreur pour les autres cas
+      throw error;
+    }
   }
 
   // Récupérer tous les clients
@@ -78,8 +122,32 @@ export class ClientService {
 
   // Mettre à jour un client
   async updateClient(id: string, updates: Partial<Omit<FirebaseClient, 'id' | 'createdAt'>>): Promise<void> {
-    const clientRef = doc(db, this.collectionName, id);
-    await updateDoc(clientRef, updates);
+    try {
+      console.log('Mise à jour client dans Firebase:', { id, updates });
+      const clientRef = doc(db, this.collectionName, id);
+      await updateDoc(clientRef, updates);
+      console.log('Client mis à jour avec succès:', id);
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la mise à jour du client:', error);
+
+      // Gérer spécifiquement l'erreur ERR_BLOCKED_BY_CLIENT
+      if (error.message?.includes('ERR_BLOCKED_BY_CLIENT') ||
+          error.code === 'network-request-failed' ||
+          error.message?.includes('Failed to fetch')) {
+
+        console.error('🚫 Connexion Firestore bloquée - vérifiez vos extensions de navigateur');
+        throw new Error('Connexion bloquée par le navigateur. Désactivez temporairement vos extensions (ad-blockers) et réessayez.');
+      }
+
+      // Gérer spécifiquement les erreurs de permissions
+      if (error.message?.includes('Missing or insufficient permissions')) {
+        console.error('🔒 Permissions insuffisantes pour modifier ce client');
+        throw new Error('Permissions insuffisantes. Vérifiez vos droits d\'accès.');
+      }
+
+      // Re-lancer l'erreur pour les autres cas
+      throw error;
+    }
   }
 
   // Récupérer un client par son ID utilisateur
@@ -118,8 +186,32 @@ export class ClientService {
 
   // Supprimer un client
   async deleteClient(id: string): Promise<void> {
-    const clientRef = doc(db, this.collectionName, id);
-    await deleteDoc(clientRef);
+    try {
+      console.log('Suppression client dans Firebase:', id);
+      const clientRef = doc(db, this.collectionName, id);
+      await deleteDoc(clientRef);
+      console.log('Client supprimé avec succès:', id);
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la suppression du client:', error);
+
+      // Gérer spécifiquement l'erreur ERR_BLOCKED_BY_CLIENT
+      if (error.message?.includes('ERR_BLOCKED_BY_CLIENT') ||
+          error.code === 'network-request-failed' ||
+          error.message?.includes('Failed to fetch')) {
+
+        console.error('🚫 Connexion Firestore bloquée - vérifiez vos extensions de navigateur');
+        throw new Error('Connexion bloquée par le navigateur. Désactivez temporairement vos extensions (ad-blockers) et réessayez.');
+      }
+
+      // Gérer spécifiquement les erreurs de permissions
+      if (error.message?.includes('Missing or insufficient permissions')) {
+        console.error('🔒 Permissions insuffisantes pour supprimer ce client');
+        throw new Error('Permissions insuffisantes. Vérifiez vos droits d\'accès.');
+      }
+
+      // Re-lancer l'erreur pour les autres cas
+      throw error;
+    }
   }
 
   // Écouter les changements en temps réel

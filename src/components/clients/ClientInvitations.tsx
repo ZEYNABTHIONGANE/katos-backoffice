@@ -21,6 +21,7 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
   const [loading, setLoading] = useState(false);
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [credentials, setCredentials] = useState<string | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
   const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
 
   // Charger les invitations du client
@@ -94,22 +95,6 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
     }
   };
 
-  // Copier le lien direct
-  const copyDirectLink = async (token: string) => {
-    const directUrl = invitationService.generateDirectUrl(token);
-    try {
-      await navigator.clipboard.writeText(directUrl);
-      toast.success('Lien direct copié dans le presse-papiers');
-    } catch (error) {
-      const textArea = document.createElement('textarea');
-      textArea.value = directUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      toast.success('Lien direct copié dans le presse-papiers');
-    }
-  };
 
   // Supprimer une invitation
   const deleteInvitation = async (invitationId: string) => {
@@ -124,6 +109,34 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
     }
   };
 
+  // Régénérer les accès client
+  const regenerateClientAccess = async () => {
+    if (!client.id) {
+      toast.error('Client invalide');
+      return;
+    }
+
+    setRegenerating(true);
+    try {
+      const result = await invitationService.regenerateClientAccess(client.id);
+
+      if (result.success) {
+        setCredentials(result.credentials || '');
+        toast.success('Accès régénérés avec succès', {
+          autoClose: 3000
+        });
+        onUpdate?.();
+      } else {
+        toast.error(result.error || 'Erreur lors de la régénération des accès');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la régénération:', error);
+      toast.error('Erreur lors de la régénération des accès');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   // Confirmer la suppression
   const handleDeleteInvitation = (invitation: FirebaseInvitation) => {
     confirm(
@@ -133,6 +146,19 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
         message: `Êtes-vous sûr de vouloir supprimer cette invitation envoyée le ${invitation.createdAt.toDate().toLocaleDateString('fr-FR')} ?`,
         confirmText: 'Supprimer',
         type: 'danger'
+      }
+    );
+  };
+
+  // Confirmer la régénération
+  const handleRegenerateAccess = () => {
+    confirm(
+      regenerateClientAccess,
+      {
+        title: 'Régénérer les accès',
+        message: `Êtes-vous sûr de vouloir régénérer les identifiants de connexion pour ${client.prenom} ${client.nom} ? Les anciens identifiants ne fonctionneront plus.`,
+        confirmText: 'Régénérer',
+        type: 'warning'
       }
     );
   };
@@ -276,8 +302,82 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
           </div>
         </div>
 
-        {/* Identifiants de connexion créés - Version épurée */}
-        {credentials && (
+        {/* Identifiants de connexion sauvegardés */}
+        {(client.username && client.tempPassword) && (
+          <div className="border border-blue-200 rounded-lg overflow-hidden">
+            <div className="bg-blue-50 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-500 text-lg">●</span>
+                <span className="text-sm font-medium text-blue-900">Identifiants sauvegardés</span>
+              </div>
+            </div>
+            <div className="bg-white p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Identifiant</label>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{client.username}</span>
+                    <Button
+                      onClick={() => {
+                        navigator.clipboard.writeText(client.username!);
+                        toast.success('Identifiant copié', { autoClose: 1000 });
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="px-2 h-7"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Mot de passe</label>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{client.tempPassword}</span>
+                    <Button
+                      onClick={() => {
+                        navigator.clipboard.writeText(client.tempPassword!);
+                        toast.success('Mot de passe copié', { autoClose: 1000 });
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="px-2 h-7"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    const fullCredentials = `Identifiant: ${client.username}\nMot de passe: ${client.tempPassword}`;
+                    navigator.clipboard.writeText(fullCredentials);
+                    toast.success('Identifiants copiés', { autoClose: 2000 });
+                  }}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copier tout
+                </Button>
+                <Button
+                  onClick={handleRegenerateAccess}
+                  disabled={regenerating}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
+                  {regenerating ? 'Régénération...' : 'Régénérer'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Identifiants de connexion créés - Version épurée pour nouveaux comptes */}
+        {credentials && !(client.username && client.tempPassword) && (
           <div className="border border-green-200 rounded-lg overflow-hidden">
             <div className="bg-green-50 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -389,12 +489,34 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
           </div>
         ) : null}
 
-        {/* Message d'aide - Version minimaliste */}
-        {!canCreateAccount() && client.email && (
+        {/* Messages d'aide */}
+        {!client.email && (
+          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-yellow-500">⚠️</span>
+              <span className="text-yellow-800">Un email est requis pour créer un compte mobile</span>
+            </div>
+          </div>
+        )}
+
+        {!canCreateAccount() && client.email && !client.username && (
           <div className="p-3 bg-blue-50 rounded-lg">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-blue-500">●</span>
               <span className="text-blue-800">Compte déjà créé</span>
+            </div>
+          </div>
+        )}
+
+        {canCreateAccount() && !credentials && !(client.username && client.tempPassword) && (
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="text-center">
+              <h3 className="text-sm font-medium text-gray-900 mb-2">
+                Aucun compte mobile
+              </h3>
+              <p className="text-xs text-gray-600 mb-3">
+                Ce client n'a pas encore de compte pour l'application mobile. Cliquez sur "Créer le compte" pour générer les identifiants de connexion.
+              </p>
             </div>
           </div>
         )}

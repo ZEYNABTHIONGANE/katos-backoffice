@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Eye, Edit, Trash2, Phone, MapPin, Users, Mail } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Timestamp } from 'firebase/firestore';
@@ -6,7 +6,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { ClientModal } from '../components/clients/ClientModal';
-import { ClientDocumentsModal } from '../components/clients/ClientDocumentsModal';
+import { ClientDetailsModal } from '../components/clients/ClientDetailsModal';
 import { ClientInvitations } from '../components/clients/ClientInvitations';
 import { Modal } from '../components/ui/Modal';
 import { useClientStore } from '../store/clientStore';
@@ -15,14 +15,19 @@ import type { Client } from '../types';
 import type { FirebaseClient } from '../types/firebase';
 
 export const Clients: React.FC = () => {
-  const { clients, addClient, updateClient, deleteClient } = useClientStore();
+  const { clients, addClient, updateClient, deleteClient, initializeClients } = useClientStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | undefined>();
-  const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [viewingClient, setViewingClient] = useState<Client | undefined>();
   const [isInvitationsModalOpen, setIsInvitationsModalOpen] = useState(false);
   const [invitationClient, setInvitationClient] = useState<Client | undefined>();
   const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
+
+  // Initialiser les clients au montage du composant
+  useEffect(() => {
+    initializeClients();
+  }, [initializeClients]);
 
   // Convertir Client vers FirebaseClient pour les invitations
   const convertToFirebaseClient = (client: Client): FirebaseClient => ({
@@ -30,21 +35,33 @@ export const Clients: React.FC = () => {
     nom: client.nom,
     prenom: client.prenom,
     email: client.email,
+    telephone: client.telephone || '',
+    adresse: client.adresse || '',
     localisationSite: client.localisationSite,
     projetAdhere: client.projetAdhere,
     status: client.status,
     invitationStatus: client.invitationStatus,
     invitationToken: client.invitationToken,
     userId: client.userId,
+    username: client.username,
+    tempPassword: client.tempPassword,
     createdAt: Timestamp.fromDate(new Date(client.createdAt)),
     invitedAt: client.invitedAt ? Timestamp.fromDate(new Date(client.invitedAt)) : undefined,
     acceptedAt: client.acceptedAt ? Timestamp.fromDate(new Date(client.acceptedAt)) : undefined
   });
 
   const handleAddClient = async (clientData: Omit<Client, 'id' | 'createdAt'>) => {
-    const success = await addClient(clientData);
+    // S'assurer que tous les champs requis sont présents
+    const normalizedData = {
+      ...clientData,
+      telephone: clientData.telephone || '',
+      adresse: clientData.adresse || ''
+    };
+
+    const success = await addClient(normalizedData);
     if (success) {
       toast.success('Profil client créé avec succès');
+      handleCloseModal();
     } else {
       toast.error('Erreur lors de la création du client');
     }
@@ -60,6 +77,7 @@ export const Clients: React.FC = () => {
       const success = await updateClient(selectedClient.id, clientData);
       if (success) {
         toast.success('Client modifié avec succès');
+        handleCloseModal();
       } else {
         toast.error('Erreur lors de la modification du client');
       }
@@ -68,9 +86,13 @@ export const Clients: React.FC = () => {
 
   const handleDeleteClient = (client: Client) => {
     confirm(
-      () => {
-        deleteClient(client.id);
-        toast.success('Client supprimé avec succès');
+      async () => {
+        const success = await deleteClient(client.id);
+        if (success) {
+          toast.success('Client supprimé avec succès');
+        } else {
+          toast.error('Erreur lors de la suppression du client');
+        }
       },
       {
         title: 'Supprimer',
@@ -207,10 +229,10 @@ export const Clients: React.FC = () => {
                           size="sm"
                           onClick={() => {
                             setViewingClient(client);
-                            setIsDocumentsModalOpen(true);
+                            setIsDetailsModalOpen(true);
                           }}
                           className="p-1 sm:p-2"
-                          title="Voir documents"
+                          title="Voir détails"
                         >
                           <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Button>
@@ -290,10 +312,16 @@ export const Clients: React.FC = () => {
       />
 
       {viewingClient && (
-        <ClientDocumentsModal
-          isOpen={isDocumentsModalOpen}
-          onClose={() => setIsDocumentsModalOpen(false)}
+        <ClientDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setViewingClient(undefined);
+          }}
           client={viewingClient}
+          onUpdate={() => {
+            // Les données seront automatiquement mises à jour via le listener en temps réel
+          }}
         />
       )}
 

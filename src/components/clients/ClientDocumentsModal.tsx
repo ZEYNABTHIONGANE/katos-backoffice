@@ -59,13 +59,13 @@ export const ClientDocumentsModal: React.FC<ClientDocumentsModalProps> = ({
   };
 
   const handleDownload = (document: ClientDocument) => {
-    const link = document.createElement('a');
+    const link = window.document.createElement('a');
     link.href = document.url;
     link.download = document.name;
     link.target = '_blank';
-    document.body.appendChild(link);
+    window.document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    window.document.body.removeChild(link);
   };
 
   const handleView = (document: ClientDocument) => {

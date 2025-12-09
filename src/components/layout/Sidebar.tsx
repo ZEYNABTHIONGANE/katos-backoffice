@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingBag, Settings, LogOut, Building2, UserCog, HardHat } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingBag, Settings, LogOut, Building2, UserCog, HardHat, CreditCard } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useLayout } from '../../hooks/useLayout';
 import { cn } from '../../utils/cn';
@@ -10,9 +10,10 @@ import logo from '../../assets/logo.png';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/clients', icon: Users },
-  { name: 'Projets', href: '/projects', icon: Building2 },
-  { name: 'Chantiers', href: '/chantiers', icon: HardHat },
+  { name: 'Villas', href: '/projects', icon: Building2 },
+  { name: 'Projets', href: '/chantiers', icon: HardHat },
   { name: 'Boutique', href: '/boutique', icon: ShoppingBag },
+  { name: 'Facturation', href: '/facturation', icon: CreditCard, requiresPermission: 'canManageUsers' as const },
   { name: 'Administrateurs', href: '/users', icon: UserCog, requiresPermission: 'canManageUsers' as const },
   { name: 'Paramètres', href: '/settings', icon: Settings },
 ];

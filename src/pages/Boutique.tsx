@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, ShoppingBag } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Card } from '../components/ui/Card';
@@ -10,13 +10,24 @@ import { useConfirm } from '../hooks/useConfirm';
 import type { Material } from '../types';
 
 export const Boutique: React.FC = () => {
-  const { materials, addMaterial, updateMaterial, deleteMaterial } = useMaterialStore();
+  const { materials, addMaterial, updateMaterial, deleteMaterial, initializeMaterials } = useMaterialStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | undefined>();
   const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
-  const handleAddMaterial = (materialData: Omit<Material, 'id'>) => {
-    addMaterial(materialData);
-    toast.success('Matériau ajouté avec succès à la vitrine');
+
+  // Initialiser les matériaux au montage du composant
+  useEffect(() => {
+    initializeMaterials();
+  }, [initializeMaterials]);
+
+  const handleAddMaterial = async (materialData: Omit<Material, 'id'>) => {
+    const success = await addMaterial(materialData);
+    if (success) {
+      toast.success('Matériau ajouté avec succès à la vitrine');
+      handleCloseModal();
+    } else {
+      toast.error('Erreur lors de l\'ajout du matériau');
+    }
   };
 
   const handleEditMaterial = (material: Material) => {
@@ -24,18 +35,27 @@ export const Boutique: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleUpdateMaterial = (materialData: Omit<Material, 'id'>) => {
+  const handleUpdateMaterial = async (materialData: Omit<Material, 'id'>) => {
     if (selectedMaterial) {
-      updateMaterial(selectedMaterial.id, materialData);
-      toast.success('Matériau modifié avec succès');
+      const success = await updateMaterial(selectedMaterial.id, materialData);
+      if (success) {
+        toast.success('Matériau modifié avec succès');
+        handleCloseModal();
+      } else {
+        toast.error('Erreur lors de la modification du matériau');
+      }
     }
   };
 
   const handleDeleteMaterial = (material: Material) => {
     confirm(
-      () => {
-        deleteMaterial(material.id);
-        toast.success('Matériau supprimé avec succès');
+      async () => {
+        const success = await deleteMaterial(material.id);
+        if (success) {
+          toast.success('Matériau supprimé avec succès');
+        } else {
+          toast.error('Erreur lors de la suppression du matériau');
+        }
       },
       {
         title: 'Supprimer',

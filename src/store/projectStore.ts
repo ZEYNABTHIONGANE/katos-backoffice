@@ -10,6 +10,8 @@ interface ProjectForApp {
   description: string;
   images: string[];
   type: string;
+  price: number;
+  currency: string;
 }
 
 interface FirebaseProjectState {
@@ -32,7 +34,9 @@ const convertFirebaseProject = (firebaseProject: FirebaseProject): ProjectForApp
   name: firebaseProject.name,
   description: firebaseProject.description,
   images: firebaseProject.images,
-  type: firebaseProject.type
+  type: firebaseProject.type,
+  price: firebaseProject.price || 0,
+  currency: firebaseProject.currency || 'FCFA'
 });
 
 // Fonction pour convertir ProjectForApp vers FirebaseProject
@@ -40,7 +44,9 @@ const convertToFirebaseProject = (project: Omit<ProjectForApp, 'id'>): Omit<Fire
   name: project.name,
   description: project.description,
   images: project.images,
-  type: project.type
+  type: project.type,
+  price: project.price || 0,
+  currency: project.currency || 'FCFA'
 });
 
 export const useProjectStore = create<FirebaseProjectState>((set, get) => ({
@@ -74,6 +80,8 @@ export const useProjectStore = create<FirebaseProjectState>((set, get) => ({
       if (updates.description !== undefined) firebaseUpdates.description = updates.description;
       if (updates.images !== undefined) firebaseUpdates.images = updates.images;
       if (updates.type !== undefined) firebaseUpdates.type = updates.type;
+      if (updates.price !== undefined) firebaseUpdates.price = updates.price;
+      if (updates.currency !== undefined) firebaseUpdates.currency = updates.currency;
 
       await projectService.updateProject(id, firebaseUpdates);
       set({ loading: false });

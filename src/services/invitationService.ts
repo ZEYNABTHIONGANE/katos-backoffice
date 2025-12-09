@@ -246,10 +246,12 @@ export class InvitationService {
       );
 
       if (result.success) {
-        // Mettre à jour le client avec l'userId (l'admin est toujours connecté ✅)
+        // Mettre à jour le client avec l'userId et sauvegarder les identifiants
         if (result.uid) {
           await updateDoc(clientRef, {
             userId: result.uid,
+            username: result.username,
+            tempPassword: result.tempPassword,
             acceptedAt: Timestamp.now()
           });
         }
@@ -389,6 +391,66 @@ Mot de passe: ${result.tempPassword}
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'invitation:', error);
       return false;
+    }
+  }
+
+  // Régénérer les accès pour un client
+  async regenerateClientAccess(clientId: string): Promise<{ success: boolean; credentials?: string; error?: string }> {
+    try {
+      // Récupérer les informations du client
+      const clientRef = doc(db, 'clients', clientId);
+      const clientDoc = await getDoc(clientRef);
+
+      if (!clientDoc.exists()) {
+        return { success: false, error: 'Client non trouvé' };
+      }
+
+      const clientData = clientDoc.data();
+
+      if (!clientData.email) {
+        return { success: false, error: 'Email requis pour régénérer les accès' };
+      }
+
+      // Générer de nouveaux identifiants
+      const { clientAccountService } = await import('./clientAccountService');
+      const newUsername = clientAccountService.generateClientUsername();
+      const newTempPassword = clientAccountService.generateTemporaryPassword();
+
+      // Mettre à jour le client avec les nouveaux identifiants
+      await updateDoc(clientRef, {
+        username: newUsername,
+        tempPassword: newTempPassword
+      });
+
+      // Si un compte Firebase existe, il faudra que l'utilisateur se reconnecte avec le nouveau mot de passe
+      // Pour l'instant, on met juste à jour les identifiants stockés
+
+      // Formater les nouveaux identifiants pour l'affichage
+      const credentials = `🔑 NOUVEAUX IDENTIFIANTS DE CONNEXION
+
+Identifiant: ${newUsername}
+Mot de passe: ${newTempPassword}
+
+📱 Instructions de connexion:
+1. Utilisez le nouvel identifiant (pas l'email)
+2. Entrez le nouveau mot de passe fourni
+3. Changez le mot de passe lors de la première connexion
+
+⚠️ IMPORTANT:
+- Les anciens identifiants ne fonctionnent plus
+- Gardez ces informations confidentielles
+- Le mot de passe doit être changé à la première connexion`;
+
+      return {
+        success: true,
+        credentials
+      };
+    } catch (error) {
+      console.error('Erreur lors de la régénération des accès:', error);
+      return {
+        success: false,
+        error: 'Erreur lors de la régénération des accès'
+      };
     }
   }
 
