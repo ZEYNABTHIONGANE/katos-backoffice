@@ -18,7 +18,7 @@ import { db, storage } from '../config/firebase';
 import type { UnifiedDocument, DocumentNotification, DocumentStats } from '../types/documents';
 
 export class UnifiedDocumentService {
-  private documentsCollection = 'unifiedDocuments';
+  private documentsCollection = 'documents';
   private notificationsCollection = 'documentNotifications';
 
   // Créer un document (depuis backoffice - envoi aux clients)

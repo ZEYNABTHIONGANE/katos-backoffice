@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
-import { User, Mail, MapPin, Phone, Calendar, Settings, CreditCard, FileText, FolderOpen } from 'lucide-react';
+import { User, Mail, MapPin, Phone, Calendar, Settings } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { ClientInvitations } from './ClientInvitations';
-import { ClientBilling } from './ClientBilling';
-import { ClientInvoiceHistory } from './ClientInvoiceHistory';
-import { ClientDocumentManager } from './ClientDocumentManager';
 import type { Client } from '../../types';
 import type { FirebaseClient } from '../../types/firebase';
 import { Timestamp } from 'firebase/firestore';
@@ -22,7 +19,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
   client,
   onUpdate
 }) => {
-  const [activeTab, setActiveTab] = useState<'infos' | 'access' | 'documents' | 'invoices' | 'billing'>('infos');
+  const [activeTab, setActiveTab] = useState<'infos' | 'access'>('infos');
 
   // Convertir Client vers FirebaseClient pour les invitations
   const convertToFirebaseClient = (client: Client): FirebaseClient => ({
@@ -60,10 +57,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
 
   const tabs = [
     { key: 'infos', label: 'Informations', icon: User },
-    { key: 'access', label: 'Accès App', icon: Settings },
-    { key: 'documents', label: 'Documents', icon: FolderOpen },
-    { key: 'invoices', label: 'Factures', icon: FileText },
-    { key: 'billing', label: 'Échéancier', icon: CreditCard }
+    { key: 'access', label: 'Accès App', icon: Settings }
   ] as const;
 
   return (
@@ -180,18 +174,6 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               client={convertToFirebaseClient(client)}
               onUpdate={onUpdate}
             />
-          )}
-
-          {activeTab === 'documents' && (
-            <ClientDocumentManager client={client} />
-          )}
-
-          {activeTab === 'invoices' && (
-            <ClientInvoiceHistory client={client} />
-          )}
-
-          {activeTab === 'billing' && (
-            <ClientBilling client={client} />
           )}
         </div>
       </div>
