@@ -135,17 +135,7 @@ export const STANDARD_PHASES: Omit<ChantierPhase, 'id' | 'lastUpdated' | 'update
     photos: [],
     notes: ''
   },
-  {
-    name: 'Électricité & Plomberie',
-    description: 'Installation des réseaux électriques et de plomberie',
-    status: 'pending',
-    progress: 0,
-    assignedTeamMembers: [],
-    requiredMaterials: [],
-    estimatedDuration: 21, // 3 semaines
-    photos: [],
-    notes: ''
-  },
+
   {
     name: 'Finitions',
     description: 'Peinture, carrelage et finitions intérieures',

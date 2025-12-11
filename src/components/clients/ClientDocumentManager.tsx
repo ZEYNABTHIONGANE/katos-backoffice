@@ -257,9 +257,50 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
         </Button>
       </div>
 
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Send className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Documents envoyés</p>
+              <p className="text-xl font-bold text-blue-600">{adminDocuments.length}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <FileText className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Documents reçus</p>
+              <p className="text-xl font-bold text-green-600">{clientDocuments.length}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <Clock className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">En attente d'approbation</p>
+              <p className="text-xl font-bold text-yellow-600">
+                {clientDocuments.filter(doc => doc.requiresApproval && !doc.isApproved).length}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
       {/* Documents envoyés au client */}
       <div className="space-y-4">
-        <h4 className="font-medium text-gray-900">Documents envoyés au client</h4>
+        <h4 className="font-medium text-gray-900">Documents envoyés au client ({adminDocuments.length})</h4>
 
         {adminDocuments.length === 0 ? (
           <Card className="p-6 text-center">
@@ -319,8 +360,8 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
       </div>
 
       {/* Documents reçus du client */}
-      {/* <div className="space-y-4">
-        <h4 className="font-medium text-gray-900">Documents reçus du client</h4>
+      <div className="space-y-4">
+        <h4 className="font-medium text-gray-900">Documents reçus du client ({clientDocuments.length})</h4>
 
         {clientDocuments.length === 0 ? (
           <Card className="p-6 text-center">
@@ -384,7 +425,7 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
             ))}
           </div>
         )}
-      </div> */}
+      </div>
 
       {/* Modal d'upload */}
       <Modal

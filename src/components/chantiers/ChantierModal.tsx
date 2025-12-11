@@ -85,28 +85,74 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     setErrors({});
   }, [chantier, isOpen]);
 
-  // Mettre à jour automatiquement le nom du chantier basé sur le client et projet sélectionnés
+  // Mettre à jour le nom du chantier si le projet est changé manuellement (garde cette logique au cas où)
   useEffect(() => {
-    if (formData.clientId && formData.projectTemplateId) {
+    if (formData.clientId && formData.projectTemplateId && !chantier) {
       const selectedClient = clients.find(c => c.id === formData.clientId);
       const selectedProject = projects.find(p => p.id === formData.projectTemplateId);
 
       if (selectedClient && selectedProject) {
-        const generatedName = `Chantier ${selectedClient.prenom} ${selectedClient.nom} - ${selectedProject.name}`;
-        setFormData(prev => ({ ...prev, name: generatedName }));
-      }
-    }
-  }, [formData.clientId, formData.projectTemplateId, clients, projects]);
+        // Seulement régénérer le nom si c'est différent du projet associé au client
+        // (cas où l'utilisateur change manuellement le projet)
+        // Trouver l'ID du projet associé au client pour comparer correctement
+        const associatedProject = projects.find(p =>
+          p.id === selectedClient.projetAdhere ||
+          p.name === selectedClient.projetAdhere ||
+          selectedClient.projetAdhere.toLowerCase().includes(p.name.toLowerCase())
+        );
 
-  // Auto-remplir l'adresse avec la localisation du client
-  useEffect(() => {
-    if (formData.clientId) {
-      const selectedClient = clients.find(c => c.id === formData.clientId);
-      if (selectedClient) {
-        setFormData(prev => ({ ...prev, address: selectedClient.localisationSite }));
+        const associatedProjectId = associatedProject?.id;
+
+        // Seulement régénérer si l'utilisateur a vraiment changé le projet (comparer les IDs)
+        if (associatedProjectId && associatedProjectId !== formData.projectTemplateId) {
+          // Si l'utilisateur a changé le projet, utiliser le nom du nouveau projet sélectionné
+          const generatedName = `Chantier ${selectedClient.prenom} ${selectedClient.nom} - ${selectedProject.name}`;
+          setFormData(prev => ({ ...prev, name: generatedName }));
+        }
       }
     }
-  }, [formData.clientId, clients]);
+  }, [formData.clientId, formData.projectTemplateId, clients, projects, chantier]);
+
+  // Auto-remplir TOUT dès qu'un client est sélectionné
+  useEffect(() => {
+    if (formData.clientId && !chantier) { // Seulement en mode création
+      const selectedClient = clients.find(c => c.id === formData.clientId);
+
+      if (selectedClient && selectedClient.projetAdhere) {
+        // Chercher d'abord par ID, puis par nom, puis par correspondance partielle
+        let selectedProject = projects.find(p => p.id === selectedClient.projetAdhere);
+
+        // Si pas trouvé par ID, chercher par nom exact
+        if (!selectedProject) {
+          selectedProject = projects.find(p => p.name === selectedClient.projetAdhere);
+        }
+
+        // Si toujours pas trouvé, chercher par correspondance partielle (pour "Villa AICHA F6" -> "Villa AICHA")
+        if (!selectedProject) {
+          selectedProject = projects.find(p =>
+            selectedClient.projetAdhere.toLowerCase().includes(p.name.toLowerCase()) ||
+            p.name.toLowerCase().includes(selectedClient.projetAdhere.toLowerCase())
+          );
+        }
+
+        if (selectedProject) {
+          // Auto-générer le nom du chantier en utilisant le nom complet du client (avec F6)
+          // au lieu du nom du projet trouvé (qui peut être incomplet)
+          const generatedName = `Chantier ${selectedClient.prenom} ${selectedClient.nom} - ${selectedClient.projetAdhere}`;
+
+          setFormData(prev => ({
+            ...prev,
+            // Auto-sélectionner le projet associé au client (utiliser l'ID du projet trouvé)
+            projectTemplateId: selectedProject.id,
+            // Auto-générer le nom du chantier
+            name: generatedName,
+            // Auto-remplir l'adresse
+            address: selectedClient.localisationSite
+          }));
+        }
+      }
+    }
+  }, [formData.clientId, clients, projects, chantier]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,7 +278,7 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
           {/* Sélection du projet template */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-900">
-              Projet *
+              Villa *
             </label>
             <select
               value={formData.projectTemplateId}
@@ -240,7 +286,7 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
               disabled={!!chantier} // Désactiver en mode édition
               className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
-              <option value="">Sélectionner un projet</option>
+              <option value="">Sélectionner une villa</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name} {project.type}

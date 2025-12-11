@@ -30,10 +30,8 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
 
     setLoading(true);
     try {
-      // Pour l'instant, on skip le chargement des invitations pour éviter les problèmes de permissions
-      // const clientInvitations = await invitationService.getClientInvitations(client.id);
-      // setInvitations(clientInvitations);
-      setInvitations([]);
+      const clientInvitations = await invitationService.getClientInvitations(client.id);
+      setInvitations(clientInvitations);
     } catch (error) {
       console.error('Erreur lors du chargement des invitations:', error);
       toast.error('Impossible de charger les invitations');

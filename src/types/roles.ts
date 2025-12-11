@@ -32,7 +32,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   [UserRole.ADMIN]: {
     canCreateAdmins: false,
     canCreateClients: true,
-    canManageUsers: false,
+    canManageUsers: true,
     canDeleteUsers: false,
     canViewDashboard: true,
     canManageProjects: true,
