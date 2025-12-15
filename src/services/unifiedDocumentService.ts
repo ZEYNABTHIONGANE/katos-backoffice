@@ -6,16 +6,16 @@ import {
   doc,
   addDoc,
   updateDoc,
-  deleteDoc,
   onSnapshot,
   orderBy,
   Timestamp,
   writeBatch,
   getDoc
 } from 'firebase/firestore';
-import { ref, deleteObject, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
-import type { UnifiedDocument, DocumentNotification, DocumentStats } from '../types/documents';
+import type { UnifiedDocument, DocumentNotification, DocumentStats, UnifiedDocumentType } from '../types/documents';
+import { chantierService } from './chantierService';
 
 export class UnifiedDocumentService {
   private documentsCollection = 'documents';
@@ -26,7 +26,8 @@ export class UnifiedDocumentService {
     clientId: string,
     file: File,
     documentData: Partial<UnifiedDocument>,
-    createdBy: string
+    createdBy: string,
+    chantierId?: string
   ): Promise<string> {
     try {
       // 1. Upload du fichier vers Firebase Storage
@@ -42,6 +43,7 @@ export class UnifiedDocumentService {
       const docRef = collection(db, this.documentsCollection);
       const newDocument: Omit<UnifiedDocument, 'id'> = {
         clientId,
+        chantierId: chantierId || documentData.chantierId, // Use passed ID or from data
         name: documentData.name || file.name,
         originalName: file.name,
         type: documentData.type || 'other',
@@ -50,8 +52,10 @@ export class UnifiedDocumentService {
         url: downloadURL,
         description: documentData.description,
         source: 'admin_upload',
-        visibility: documentData.visibility || 'client_only',
+        visibility: documentData.visibility || 'both', // Default to 'both'
         status: 'active',
+        isVisible: true,
+        isDeleted: false,
         isReadOnly: true, // Documents envoyés par admin sont en lecture seule
         allowClientDownload: true,
         requiresApproval: false,
@@ -87,6 +91,7 @@ export class UnifiedDocumentService {
   // Récupérer tous les documents d'un client (pour backoffice)
   async getClientDocuments(clientId: string): Promise<UnifiedDocument[]> {
     try {
+      // 1. Fetch standard documents
       const q = query(
         collection(db, this.documentsCollection),
         where('clientId', '==', clientId),
@@ -95,10 +100,54 @@ export class UnifiedDocumentService {
       );
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
+      const documents = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as UnifiedDocument[];
+
+      // 2. Fetch chef media from chantier gallery
+      try {
+        const chantier = await chantierService.getClientChantier(clientId);
+        if (chantier && chantier.gallery && chantier.gallery.length > 0) {
+          const galleryDocs: UnifiedDocument[] = chantier.gallery.map(media => ({
+            id: media.id,
+            clientId: clientId,
+            chantierId: chantier.id,
+            name: media.description || (media.type === 'video' ? 'Vidéo chantier' : 'Photo chantier'),
+            originalName: media.url.split('/').pop() || 'media',
+            type: (media.type === 'image' ? 'photo' : 'video') as UnifiedDocumentType, // Map video/image to DocumentType
+            mimeType: media.type === 'video' ? 'video/mp4' : 'image/jpeg', // Approximation
+            size: 0, // Unknown size
+            url: media.url,
+            thumbnailUrl: media.thumbnailUrl,
+            description: media.description,
+            source: 'chef_upload',
+            visibility: 'both',
+            status: 'active',
+            isVisible: true,
+            isDeleted: false,
+            isReadOnly: true,
+            allowClientDownload: true,
+            requiresApproval: false,
+            version: 1,
+            uploadedAt: media.uploadedAt,
+            uploadedBy: media.uploadedBy
+          }));
+
+          // Merge and sort
+          const allDocs = [...documents, ...galleryDocs];
+          return allDocs.sort((a, b) => {
+            const dateA = a.uploadedAt?.toDate?.() || new Date();
+            const dateB = b.uploadedAt?.toDate?.() || new Date();
+            return dateB.getTime() - dateA.getTime();
+          });
+        }
+      } catch (chantierError) {
+        console.warn('Could not fetch chantier gallery for documents:', chantierError);
+        // Continue with just documents if chantier fetch fails
+      }
+
+      return documents;
     } catch (error) {
       console.error('Erreur lors de la récupération des documents:', error);
       throw error;
@@ -160,7 +209,6 @@ export class UnifiedDocumentService {
 
   // Migrer un document client upload vers le système unifié
   async migrateClientDocument(
-    oldDocumentId: string,
     oldDocumentData: any,
     clientId: string
   ): Promise<string> {
@@ -365,6 +413,7 @@ export class UnifiedDocumentService {
       report: '📊',
       permit: '🔖',
       progress_update: '📈',
+      video: '🎥',
       other: '📎'
     };
     return icons[type] || icons.other;
@@ -379,6 +428,7 @@ export class UnifiedDocumentService {
       report: 'bg-orange-100 text-orange-800',
       permit: 'bg-red-100 text-red-800',
       progress_update: 'bg-indigo-100 text-indigo-800',
+      video: 'bg-pink-100 text-pink-800',
       other: 'bg-gray-100 text-gray-800'
     };
     return colors[type] || colors.other;
@@ -393,6 +443,7 @@ export class UnifiedDocumentService {
       report: 'Rapport',
       permit: 'Permis',
       progress_update: 'Suivi',
+      video: 'Vidéo',
       other: 'Autre'
     };
     return labels[type] || labels.other;

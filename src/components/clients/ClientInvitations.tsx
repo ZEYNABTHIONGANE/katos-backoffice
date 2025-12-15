@@ -153,9 +153,9 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
     confirm(
       regenerateClientAccess,
       {
-        title: 'Régénérer les accès',
-        message: `Êtes-vous sûr de vouloir régénérer les identifiants de connexion pour ${client.prenom} ${client.nom} ? Les anciens identifiants ne fonctionneront plus.`,
-        confirmText: 'Régénérer',
+        title: 'Réinitialiser les accès',
+        message: `Cette action va créer un NOUVEAU compte de connexion pour ${client.prenom} ${client.nom}. Les anciens identifiants ne fonctionneront plus définitivement. Utile si le client n'arrive plus à se connecter.`,
+        confirmText: 'Réinitialiser',
         type: 'warning'
       }
     );
@@ -301,7 +301,7 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
         </div>
 
         {/* Identifiants de connexion sauvegardés */}
-        {(client.username && client.tempPassword) && (
+        {(client.username && client.tempPassword) && !credentials && (
           <div className="border border-blue-200 rounded-lg overflow-hidden">
             <div className="bg-blue-50 px-4 py-3">
               <div className="flex items-center gap-2">
@@ -367,20 +367,22 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
                   className="flex items-center gap-2"
                 >
                   <RotateCcw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
-                  {regenerating ? 'Régénération...' : 'Régénérer'}
+                  {regenerating ? 'Réinitialisation...' : 'Réinitialiser'}
                 </Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Identifiants de connexion créés - Version épurée pour nouveaux comptes */}
-        {credentials && !(client.username && client.tempPassword) && (
+        {/* Identifiants de connexion créés ou régénérés */}
+        {credentials && (
           <div className="border border-green-200 rounded-lg overflow-hidden">
             <div className="bg-green-50 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-green-500 text-lg">●</span>
-                <span className="text-sm font-medium text-green-900">Compte créé</span>
+                <span className="text-sm font-medium text-green-900">
+                  {client.username ? 'Nouveaux identifiants générés' : 'Compte créé'}
+                </span>
               </div>
               <Button
                 onClick={() => setCredentials(null)}

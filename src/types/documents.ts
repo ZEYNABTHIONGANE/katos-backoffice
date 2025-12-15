@@ -9,9 +9,10 @@ export type UnifiedDocumentType =
   | 'report'
   | 'permit'
   | 'progress_update'
+  | 'video'
   | 'other';
 
-export type DocumentSource = 'client_upload' | 'admin_upload';
+export type DocumentSource = 'client_upload' | 'admin_upload' | 'chef_upload';
 export type DocumentVisibility = 'client_only' | 'admin_only' | 'both';
 export type DocumentStatus = 'active' | 'archived' | 'deleted';
 
@@ -66,6 +67,10 @@ export interface UnifiedDocument {
   deletedAt?: Timestamp;
   deletedBy?: string;
   deleteReason?: string;
+
+  // Compatibility with mobile app
+  isVisible?: boolean;
+  isDeleted?: boolean;
 }
 
 // Catégories pour organiser les documents côté mobile

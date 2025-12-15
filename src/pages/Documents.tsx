@@ -1,17 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import {
   Upload,
   FileText,
-  Download,
   Eye,
   Trash2,
   Send,
-  Filter,
   Search,
   Calendar,
-  User
+  User,
+  Play
 } from 'lucide-react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
@@ -20,10 +23,11 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useConfirm } from '../hooks/useConfirm';
 import { useClientStore } from '../store/clientStore';
 import { unifiedDocumentService } from '../services/unifiedDocumentService';
+import { chantierService } from '../services/chantierService';
 import { useAuthStore } from '../store/authStore';
 import type { UnifiedDocument, UnifiedDocumentType } from '../types/documents';
 
-export const Documents: React.FC = () => {
+export function Documents() {
   const [documents, setDocuments] = useState<UnifiedDocument[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<UnifiedDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,8 @@ export const Documents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | UnifiedDocumentType>('all');
   const [filterClient, setFilterClient] = useState<string>('all');
+  const [usersMap, setUsersMap] = useState<Record<string, string>>({});
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null);
 
   const { clients } = useClientStore();
   const { userData } = useAuthStore();
@@ -48,6 +54,7 @@ export const Documents: React.FC = () => {
 
   useEffect(() => {
     loadAllDocuments();
+    loadUsers();
   }, []);
 
   useEffect(() => {
@@ -69,6 +76,23 @@ export const Documents: React.FC = () => {
       toast.error('Erreur lors du chargement des documents');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      // Fetch users (chefs/admins) to resolve names
+      const usersRef = collection(db, 'users');
+      // Optimization: Fetch all users initially. If scaling issues, optimize later.
+      const snapshot = await getDocs(usersRef);
+      const map: Record<string, string> = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        map[doc.id] = data.displayName || data.email || 'Utilisateur inconnu';
+      });
+      setUsersMap(map);
+    } catch (error) {
+      console.error('Error loading users:', error);
     }
   };
 
@@ -102,6 +126,24 @@ export const Documents: React.FC = () => {
     return client ? `${client.prenom} ${client.nom}` : 'Client inconnu';
   };
 
+  const getSourceLabel = (source: UnifiedDocument['source']) => {
+    switch (source) {
+      case 'client_upload': return 'Reçu (Client)';
+      case 'chef_upload': return 'Reçu (Chantier)';
+      case 'admin_upload': return 'Envoyé';
+      default: return 'Inconnu';
+    }
+  };
+
+  const getSourceColor = (source: UnifiedDocument['source']) => {
+    switch (source) {
+      case 'client_upload': return 'bg-orange-100 text-orange-800';
+      case 'chef_upload': return 'bg-purple-100 text-purple-800';
+      case 'admin_upload': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -127,19 +169,28 @@ export const Documents: React.FC = () => {
 
     setUploading(true);
     try {
+      // 1. Fetch active chantier for the client
+      const chantier = await chantierService.getClientChantier(uploadForm.clientId);
+      if (!chantier) {
+        toast.error("Impossible de trouver un chantier actif pour ce client. Le document ne peut pas être lié.");
+        setUploading(false);
+        return;
+      }
+
       const documentData: Partial<UnifiedDocument> = {
-        name: uploadForm.description || uploadForm.file.name,
         type: uploadForm.type,
         description: uploadForm.description,
-        visibility: 'client_only',
-        allowClientDownload: uploadForm.allowDownload
+        visibility: 'both',
+        allowClientDownload: uploadForm.allowDownload,
+        chantierId: chantier.id // Explicitly save chantier ID
       };
 
       await unifiedDocumentService.createDocumentForClient(
         uploadForm.clientId,
         uploadForm.file,
         documentData,
-        userData?.uid || 'admin'
+        userData?.uid || 'admin',
+        chantier.id
       );
 
       toast.success('Document envoyé avec succès au client');
@@ -191,7 +242,11 @@ export const Documents: React.FC = () => {
   };
 
   const handleView = (document: UnifiedDocument) => {
-    window.open(document.url, '_blank');
+    if (document.type === 'video' || document.mimeType?.startsWith('video/')) {
+      setPlayingVideo(document.url);
+    } else {
+      window.open(document.url, '_blank');
+    }
   };
 
   if (loading) {
@@ -307,6 +362,7 @@ export const Documents: React.FC = () => {
             <option value="report">Rapports</option>
             <option value="permit">Permis</option>
             <option value="progress_update">Suivi</option>
+            <option value="video">Vidéo</option>
             <option value="other">Autres</option>
           </select>
 
@@ -340,39 +396,47 @@ export const Documents: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredDocuments.map((document) => (
               <Card key={document.id} className="p-4 hover:shadow-md transition-shadow">
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="text-2xl">
+                <div className='justify-between items-center'>
+                    <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3 w-full">
+                      <div className="text-2xl mt-1">
                         {unifiedDocumentService.getDocumentIcon(document.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h5 className="font-medium text-gray-900 text-sm truncate">
-                          {document.name}
-                        </h5>
-                        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${unifiedDocumentService.getDocumentColor(document.type)}`}>
-                          {unifiedDocumentService.getDocumentTypeLabel(document.type)}
-                        </span>
+                        <div className="flex justify-between items-start">
+                          <h5 className="font-medium text-gray-900 text-sm wrap min-h-12 uppercase overflow-hidden mb-1 flex-1 pr-2">
+                            {document.name}
+                          </h5>
+                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${getSourceColor(document.source)}`}>
+                            {getSourceLabel(document.source)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-xs text-gray-600">
+
+                  <div className="text-xs text-gray-600 min-h-22">
                     <p className="font-medium">Client: {getClientName(document.clientId)}</p>
+                    {document.source === 'chef_upload' && (
+                       <p className="font-medium text-purple-700">Par: {usersMap[document.uploadedBy] || 'Chef inconnu'}</p>
+                    )}
                     {document.description && (
                       <p className="mt-1 line-clamp-2">{document.description}</p>
                     )}
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{unifiedDocumentService.formatFileSize(document.size)}</span>
+                    <span>
+                      {document.size > 0 ? unifiedDocumentService.formatFileSize(document.size) : ''}
+                    </span>
                     <span>{document.uploadedAt.toDate().toLocaleDateString('fr-FR')}</span>
                   </div>
 
                   <div className="flex space-x-2 pt-2">
                     <Button variant="outline" size="sm" onClick={() => handleView(document)} className="flex-1">
-                      <Eye className="w-3 h-3 mr-1" />
-                      Voir
+                      {document.type === 'video' ? <Play className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+                      {document.type === 'video' ? 'Lire' : 'Voir'}
                     </Button>
                     <Button variant="danger" size="sm" onClick={() => handleDeleteDocument(document)} className="p-2">
                       <Trash2 className="w-3 h-3" />
@@ -469,7 +533,7 @@ export const Documents: React.FC = () => {
                 placeholder="Description du document"
               />
 
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <input
                   type="checkbox"
                   id="allowDownload"
@@ -480,7 +544,7 @@ export const Documents: React.FC = () => {
                 <label htmlFor="allowDownload" className="ml-2 text-sm font-medium text-gray-700">
                   Autoriser le téléchargement par le client
                 </label>
-              </div>
+              </div> */}
             </>
           )}
 
@@ -515,6 +579,33 @@ export const Documents: React.FC = () => {
         type={confirmState.type}
         loading={confirmState.loading}
       />
+
+      {/* Video Player Modal */}
+      <Modal
+        isOpen={!!playingVideo}
+        onClose={() => setPlayingVideo(null)}
+        title="Lecture vidéo"
+        size="xl"
+      >
+        <div className="flex justify-center bg-black rounded-lg overflow-hidden">
+             {playingVideo && (
+            <video
+              src={playingVideo}
+              controls
+              autoPlay
+              className="w-full max-h-[70vh]"
+              style={{ maxWidth: '100%' }}
+            >
+              Votre navigateur ne supporte pas la lecture de vidéos.
+            </video>
+          )}
+        </div>
+        <div className="flex justify-end mt-4">
+             <Button onClick={() => setPlayingVideo(null)}>
+            Fermer
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };

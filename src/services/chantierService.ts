@@ -38,6 +38,7 @@ export class ChantierService {
       assignedChefId: string;
       startDate: Date;
       plannedEndDate: Date;
+      coverImage?: string;
     },
     createdBy: string
   ): Promise<string> {
@@ -61,6 +62,7 @@ export class ChantierService {
         globalProgress: 0,
         startDate: Timestamp.fromDate(customizations.startDate),
         plannedEndDate: Timestamp.fromDate(customizations.plannedEndDate),
+        coverImage: customizations.coverImage,
         phases,
         assignedChefId: customizations.assignedChefId,
         team: [],
@@ -232,6 +234,7 @@ export class ChantierService {
       const newPhoto: ProgressPhoto = {
         id: uuidv4(),
         url: photoUrl,
+        type: 'image',
         phaseId,
         description,
         uploadedAt: Timestamp.now(),

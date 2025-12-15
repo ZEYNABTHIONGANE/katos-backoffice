@@ -191,9 +191,25 @@ export const Chantiers: React.FC = () => {
       ) : filteredChantiers.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredChantiers.map((chantier) => (
-            <Card key={chantier.id} className="p-6 hover:shadow-md transition-shadow">
-              <div className="space-y-4">
-                {/* Header */}
+            <Card key={chantier.id} className="p-0 hover:shadow-md transition-shadow overflow-hidden">
+              {/* Cover Image */}
+              {chantier.coverImage && (
+                <div className="h-48 w-full relative">
+                  <img
+                    src={chantier.coverImage}
+                    alt={`Cover ${chantier.name}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 right-2">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full shadow-sm ${getStatusColor(chantier.status)}`}>
+                      {chantier.status}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-6 space-y-4">
+                {/* Header (with adjustments if image exists) */}
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{chantier.name}</h3>
@@ -202,9 +218,11 @@ export const Chantiers: React.FC = () => {
                       <span>{chantier.address}</span>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(chantier.status)}`}>
-                    {chantier.status}
-                  </span>
+                  {!chantier.coverImage && (
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(chantier.status)}`}>
+                      {chantier.status}
+                    </span>
+                  )}
                 </div>
 
                 {/* Progression */}

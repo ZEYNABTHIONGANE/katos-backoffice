@@ -78,4 +78,23 @@ export interface FirebaseCollections {
   materials: 'materials';
   projects: 'projects';
   invitations: 'invitations';
+  chantiers: 'chantiers';
+  documents: 'documents';
+  clientSelections: 'clientSelections';
+  invitationCodes: 'invitationCodes';
+  documentNotifications: 'documentNotifications';
 }
+
+// Collection names constant for easy reference
+export const COLLECTIONS: FirebaseCollections = {
+  users: 'users',
+  clients: 'clients',
+  materials: 'materials',
+  projects: 'projects',
+  invitations: 'invitations',
+  chantiers: 'chantiers',
+  documents: 'documents',
+  clientSelections: 'clientSelections',
+  invitationCodes: 'invitationCodes',
+  documentNotifications: 'documentNotifications'
+};

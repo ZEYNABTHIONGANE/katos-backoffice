@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Plus,
   Upload,
   FileText,
   Download,
@@ -19,6 +18,7 @@ import { Input } from '../ui/Input';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { useConfirm } from '../../hooks/useConfirm';
 import { unifiedDocumentService } from '../../services/unifiedDocumentService';
+import { chantierService } from '../../services/chantierService';
 import type { Client, UnifiedDocument, UnifiedDocumentType } from '../../types';
 
 interface ClientDocumentManagerProps {
@@ -30,6 +30,7 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [activeChantierId, setActiveChantierId] = useState<string | undefined>(undefined);
   const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
 
   // Formulaire d'upload
@@ -37,13 +38,25 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
     file: null as File | null,
     type: 'other' as UnifiedDocumentType,
     description: '',
-    visibility: 'client_only' as 'client_only' | 'both',
+    visibility: 'both' as 'client_only' | 'both',
     allowDownload: true
   });
 
   useEffect(() => {
     loadDocuments();
+    loadChantier();
   }, [client.id]);
+
+  const loadChantier = async () => {
+    try {
+      const chantier = await chantierService.getClientChantier(client.id);
+      if (chantier) {
+        setActiveChantierId(chantier.id);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du chantier:', error);
+    }
+  };
 
   const loadDocuments = async () => {
     setLoading(true);
@@ -83,11 +96,15 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
 
     setUploading(true);
     try {
+      if (!activeChantierId) {
+        toast.warning("Attention: Aucun chantier actif détecté. Le document risque de ne pas être visible dans l'application.");
+      }
+
       const documentData: Partial<UnifiedDocument> = {
         name: uploadForm.description || uploadForm.file.name,
         type: uploadForm.type,
         description: uploadForm.description,
-        visibility: uploadForm.visibility,
+        visibility: 'both', // Force visibility to both
         allowClientDownload: uploadForm.allowDownload
       };
 
@@ -95,7 +112,8 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
         client.id,
         uploadForm.file,
         documentData,
-        'current-admin' // TODO: Récupérer l'ID admin connecté
+        'current-admin', // TODO: Récupérer l'ID admin connecté
+        activeChantierId
       );
 
       toast.success('Document envoyé avec succès au client');
@@ -110,6 +128,8 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
       setUploading(false);
     }
   };
+   // ... rest of component
+
 
   const handleDeleteDocument = (document: UnifiedDocument) => {
     confirm(
@@ -155,7 +175,7 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
       file: null,
       type: 'other',
       description: '',
-      visibility: 'client_only',
+      visibility: 'both',
       allowDownload: true
     });
   };
@@ -475,7 +495,7 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
           {uploadForm.file && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Type de document
                   </label>
@@ -493,20 +513,6 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
                     <option value="other">Autre</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Visibilité
-                  </label>
-                  <select
-                    value={uploadForm.visibility}
-                    onChange={(e) => setUploadForm({...uploadForm, visibility: e.target.value as any})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  >
-                    <option value="client_only">Client uniquement</option>
-                    <option value="both">Client et équipe</option>
-                  </select>
-                </div>
               </div>
 
               <Input
@@ -516,7 +522,7 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
                 placeholder="Description du document"
               />
 
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <input
                   type="checkbox"
                   id="allowDownload"
@@ -527,7 +533,7 @@ export const ClientDocumentManager: React.FC<ClientDocumentManagerProps> = ({ cl
                 <label htmlFor="allowDownload" className="ml-2 text-sm font-medium text-gray-700">
                   Autoriser le téléchargement par le client
                 </label>
-              </div>
+              </div> */}
             </>
           )}
 

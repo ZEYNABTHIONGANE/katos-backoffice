@@ -41,10 +41,13 @@ export interface TeamMember {
 export interface ProgressPhoto {
   id: string;
   url: string;
+  type: 'image' | 'video'; // Media type
   phaseId?: string; // Optional: link to specific phase
   description?: string;
   uploadedAt: Timestamp;
   uploadedBy: string;
+  duration?: number; // Video duration in seconds (for videos only)
+  thumbnailUrl?: string; // Video thumbnail URL (for videos only)
   location?: {
     latitude: number;
     longitude: number;
@@ -98,6 +101,7 @@ export interface FirebaseChantier {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy: string; // Admin who created the chantier
+  coverImage?: string; // URL of the cover image
 }
 
 // Export des phases standards basées sur l'analyse de l'app mobile

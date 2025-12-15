@@ -3,12 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Upload, X } from 'lucide-react';
 import { userService } from '../../services/userService';
 import { useClientStore } from '../../store/clientStore';
 import { useProjectStore } from '../../store/projectStore';
 import { UserRole } from '../../types/roles';
 import type { FirebaseUser } from '../../types/firebase';
 import { chantierService } from '../../services/chantierService';
+import { storageService } from '../../services/storageService';
 import { toast } from 'react-toastify';
 
 interface ChantierModalProps {
@@ -28,6 +30,9 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
   const { projects } = useProjectStore();
   const [chefs, setChefs] = useState<FirebaseUser[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     clientId: '',
@@ -57,6 +62,21 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
       loadChefs();
     }
   }, [isOpen]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      try {
+        storageService.validateImageFile(file);
+        setImageFile(file);
+        // Create preview URL
+        const objectUrl = URL.createObjectURL(file);
+        setPreviewUrl(objectUrl);
+      } catch (error: any) {
+        toast.error(error.message);
+      }
+    }
+  };
 
   // Initialiser le formulaire avec les données du chantier en mode édition
   useEffect(() => {
@@ -164,12 +184,13 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     if (!chantier) {
       if (!formData.clientId) newErrors.clientId = 'Le client est requis';
       if (!formData.projectTemplateId) newErrors.projectTemplateId = 'Le projet template est requis';
+      if (!formData.startDate) newErrors.startDate = 'La date de début est requise';
+      if (!formData.plannedEndDate) newErrors.plannedEndDate = 'La date de fin prévue est requise';
     }
+    
     if (!formData.name) newErrors.name = 'Le nom du chantier est requis';
     if (!formData.address) newErrors.address = 'L\'adresse du chantier est requise';
     if (!formData.assignedChefId) newErrors.assignedChefId = 'Le chef de chantier est requis';
-    if (!formData.startDate) newErrors.startDate = 'La date de début est requise';
-    if (!formData.plannedEndDate) newErrors.plannedEndDate = 'La date de fin prévue est requise';
 
     // Vérifier que la date de fin est après la date de début
     if (formData.startDate && formData.plannedEndDate) {
@@ -188,15 +209,31 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     try {
       setLoading(true);
 
+      let coverImageUrl = chantier?.coverImage;
+
+      // Upload image if selected
+      if (imageFile) {
+        try {
+          coverImageUrl = await storageService.uploadImage(imageFile, 'chantiers/covers');
+        } catch (uploadError: any) {
+          console.error('Erreur upload image:', uploadError);
+          toast.error("Erreur lors de l'upload de l'image, le chantier sera créé sans image.");
+        }
+      }
+
       if (chantier) {
         // Mode édition - Mise à jour du chantier existant
-        await chantierService.updateChantier(chantier.id, {
+        const updates: any = {
           name: formData.name,
           address: formData.address,
           assignedChefId: formData.assignedChefId,
-          // startDate: new Date(formData.startDate),
-          // plannedEndDate: new Date(formData.plannedEndDate)
-        });
+          coverImage: coverImageUrl || null,
+        };
+
+        if (formData.startDate) updates.startDate = new Date(formData.startDate);
+        if (formData.plannedEndDate) updates.plannedEndDate = new Date(formData.plannedEndDate);
+
+        await chantierService.updateChantier(chantier.id, updates);
         toast.success('Chantier modifié avec succès!');
       } else {
         // Mode création - Créer un nouveau chantier
@@ -208,7 +245,8 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
             address: formData.address,
             assignedChefId: formData.assignedChefId,
             startDate: new Date(formData.startDate),
-            plannedEndDate: new Date(formData.plannedEndDate)
+            plannedEndDate: new Date(formData.plannedEndDate),
+            coverImage: coverImageUrl
           },
           'admin' // TODO: Récupérer l'ID de l'utilisateur connecté
         );
@@ -251,6 +289,60 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     >
       <div className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* Cover Image Upload */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-900">
+              Image de couverture
+            </label>
+            
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-primary-500 transition-colors cursor-pointer relative"
+                 onClick={() => document.getElementById('cover-image-upload')?.click()}>
+              
+              {previewUrl ? (
+                <div className="relative w-full h-48">
+                  <img 
+                    src={previewUrl} 
+                    alt="Cover preview" 
+                    className="w-full h-full object-cover rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setImageFile(null);
+                      setPreviewUrl(null);
+                    }}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1 text-center">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="flex text-sm text-gray-600 justify-center">
+                    <label htmlFor="cover-image-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
+                      <span>Télécharger une photo</span>
+                      <input 
+                        id="cover-image-upload" 
+                        name="cover-image-upload" 
+                        type="file" 
+                        className="sr-only" 
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        onClick={(e) => e.stopPropagation()} 
+                      />
+                    </label>
+                    <p className="pl-1">ou glisser-déposer</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    PNG, JPG, WEBP jusqu'à 5MB
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Sélection du client */}
           <div className="space-y-2">

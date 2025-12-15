@@ -411,35 +411,47 @@ Mot de passe: ${result.tempPassword}
         return { success: false, error: 'Email requis pour régénérer les accès' };
       }
 
-      // Générer de nouveaux identifiants
-      const { clientAccountService } = await import('./clientAccountService');
-      const newUsername = clientAccountService.generateClientUsername();
-      const newTempPassword = clientAccountService.generateTemporaryPassword();
+      // 1. Générer un email technique pour l'authentification
+      const timestamp = Date.now();
+      const technicalEmail = `auth_${clientId}_${timestamp}@app.katos`;
+      const clientName = `${clientData.prenom || 'Client'} ${clientData.nom || ''}`.trim();
 
-      // Mettre à jour le client avec les nouveaux identifiants
+      console.log(`Regenerating access for client ${clientId} with technical email: ${technicalEmail}`);
+
+      // 2. Créer un NOUVEAU compte utilisateur via le service
+      const { clientAccountService } = await import('./clientAccountService');
+      const result = await clientAccountService.createClientAccount(
+        technicalEmail,
+        clientName,
+        clientId
+      );
+
+      if (!result.success || !result.uid || !result.username || !result.tempPassword) {
+        throw new Error(result.error || 'Erreur lors de la création du nouveau compte');
+      }
+
+      // 3. Mettre à jour le client avec le NOUVEL userId et les identifiants
+      // Cela "détache" l'ancien compte utilisateur (qui devient orphelin) et attache le nouveau
       await updateDoc(clientRef, {
-        username: newUsername,
-        tempPassword: newTempPassword
+        userId: result.uid,
+        username: result.username,
+        tempPassword: result.tempPassword
       });
 
-      // Si un compte Firebase existe, il faudra que l'utilisateur se reconnecte avec le nouveau mot de passe
-      // Pour l'instant, on met juste à jour les identifiants stockés
+      console.log(`Client ${clientId} linked to new userId: ${result.uid}`);
 
       // Formater les nouveaux identifiants pour l'affichage
-      const credentials = `🔑 NOUVEAUX IDENTIFIANTS DE CONNEXION
+      const credentials = `🔑 IDENTIFIANTS RÉINITIALISÉS
 
-Identifiant: ${newUsername}
-Mot de passe: ${newTempPassword}
+Identifiant: ${result.username}
+Mot de passe: ${result.tempPassword}
 
 📱 Instructions de connexion:
-1. Utilisez le nouvel identifiant (pas l'email)
-2. Entrez le nouveau mot de passe fourni
-3. Changez le mot de passe lors de la première connexion
+1. Utilisez le nouvel identifiant
+2. Entrez le mot de passe fourni
+3. Si vous aviez déjà un compte, les anciens identifiants ne fonctionnent plus.
 
-⚠️ IMPORTANT:
-- Les anciens identifiants ne fonctionnent plus
-- Gardez ces informations confidentielles
-- Le mot de passe doit être changé à la première connexion`;
+Cette opération a réparé votre accès en créant une nouvelle connexion sécurisée.`;
 
       return {
         success: true,
