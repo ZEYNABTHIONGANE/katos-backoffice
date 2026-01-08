@@ -15,14 +15,13 @@ import {
 import { db } from '../config/firebase';
 import type {
   FirebaseChantier,
-  ChantierPhase,
   KatosChantierPhase,
   TeamMember,
   ProgressPhoto,
   ProgressUpdate,
   ChantierStatus
 } from '../types/chantier';
-import { calculateGlobalProgress, getChantierStatus, getPhaseStatus } from '../types/chantier';
+import { calculateGlobalProgress, getChantierStatus, getPhaseStatus, calculatePhaseProgress } from '../types/chantier';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ChantierService {
@@ -62,7 +61,7 @@ export class ChantierService {
           notes: phase.notes || '',
           lastUpdated: Timestamp.now(),
           updatedBy: createdBy,
-          // Champs optionnels avec null au lieu d'undefined
+          // Champs optionnels avec null au lieu de undefined pour Firestore
           plannedStartDate: null,
           plannedEndDate: null,
           actualStartDate: null,
@@ -270,15 +269,14 @@ export class ChantierService {
                 notes: notes || step.notes,
                 updatedBy: updatedBy || 'system',
                 // Mettre à jour les dates selon le progrès
-                actualStartDate: step.actualStartDate || (newProgress > 0 ? now : null),
-                actualEndDate: newProgress >= 100 ? now : (newProgress < 100 ? null : step.actualEndDate)
+                actualStartDate: step.actualStartDate || (newProgress > 0 ? now : undefined),
+                actualEndDate: newProgress >= 100 ? now : (newProgress < 100 ? undefined : step.actualEndDate)
               };
             }
             return step;
           });
 
           // Recalculer le progrès de la phase basé sur les sous-étapes
-          const { calculatePhaseProgress } = require('../types/chantier');
           const phaseProgress = calculatePhaseProgress({ ...phase, steps: updatedSteps });
 
           return {
@@ -314,7 +312,8 @@ export class ChantierService {
     phaseId: string,
     photoUrl: string,
     description?: string,
-    uploadedBy?: string
+    uploadedBy?: string,
+    stepId?: string
   ): Promise<void> {
     try {
       const chantier = await this.getChantierById(chantierId);
@@ -322,7 +321,7 @@ export class ChantierService {
         throw new Error('Chantier non trouvé');
       }
 
-      const updatedPhases = chantier.phases.map(phase => {
+      let updatedPhases = chantier.phases.map(phase => {
         if (phase.id === phaseId) {
           return {
             ...phase,
@@ -334,12 +333,32 @@ export class ChantierService {
         return phase;
       });
 
+      // Si un stepId est fourni, ajouter aussi à la sous-étape
+      if (stepId) {
+        updatedPhases = updatedPhases.map(phase => {
+          if (phase.id === phaseId && (phase as any).steps) {
+            const steps = (phase as any).steps.map((step: any) => {
+              if (step.id === stepId) {
+                return {
+                  ...step,
+                  photos: [...(step.photos || []), photoUrl]
+                };
+              }
+              return step;
+            });
+            return { ...phase, steps };
+          }
+          return phase;
+        });
+      }
+
       // Ajouter aussi à la galerie générale
       const newPhoto: ProgressPhoto = {
         id: uuidv4(),
         url: photoUrl,
         type: 'image',
         phaseId,
+        stepId,
         description,
         uploadedAt: Timestamp.now(),
         uploadedBy: uploadedBy || 'system'

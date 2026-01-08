@@ -1,14 +1,15 @@
 import React from 'react';
-import { Users, Building, Clock, CheckCircle, ShoppingCart, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Building, Clock, CheckCircle, ChevronRight, TrendingUp, Activity, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { useClientStore } from '../store/clientStore';
-import { useMaterialStore } from '../store/materialStore';
 import { useClientSelections } from '../hooks/useClientSelections';
 
 export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { clients } = useClientStore();
-  const { materials } = useMaterialStore();
-  const { clientSelections, updateSelectionStatus } = useClientSelections();
+  const { clientSelections } = useClientSelections();
 
   const stats = [
     {
@@ -16,229 +17,282 @@ export const Dashboard: React.FC = () => {
       value: clients.length,
       icon: Users,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-100',
+      path: '/clients',
+      trend: `${clients.length > 0 ? '+1' : '0'} ce mois`,
+      trendColor: 'text-green-600'
     },
     {
       name: 'Projets en cours',
       value: clients.filter(client => client.status === 'En cours').length,
-      icon: Building,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      icon: Activity,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
+      borderColor: 'border-indigo-100',
+      path: '/clients', // Naviguer vers clients car c'est là qu'on voit les statuts
+      trend: 'Actifs',
+      trendColor: 'text-indigo-600'
     },
     {
       name: 'Projets en attente',
       value: clients.filter(client => client.status === 'En attente').length,
       icon: Clock,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-100',
+      path: '/clients',
+      trend: 'Action requise',
+      trendColor: 'text-amber-600'
     },
     {
       name: 'Projets terminés',
       value: clients.filter(client => client.status === 'Terminé').length,
       icon: CheckCircle,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50',
+      borderColor: 'border-emerald-100',
+      path: '/clients',
+      trend: 'Complétés',
+      trendColor: 'text-emerald-600'
     },
   ];
 
-  const recentClients = clients.slice(-3).reverse();
-  const recentSelections = clientSelections.slice(0, 3);
+  const recentClients = clients.slice(-5).reverse();
   const pendingSelections = clientSelections.filter(s => s.status === 'submitted');
 
-  const formatDateTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return dateString;
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const handleStatusUpdate = async (selectionId: string, status: 'approved' | 'rejected') => {
-    try {
-      await updateSelectionStatus(selectionId, status);
-    } catch (error) {
-      console.error('Error updating selection status:', error);
-      // You might want to show a toast notification here
-    }
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">Vue d'ensemble de votre activité</p>
+    <div className="space-y-8 p-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Tableau de bord</h1>
+          <p className="text-gray-500 mt-2">Vue d'ensemble de votre activité Katos.</p>
+        </div>
+        <div className="hidden sm:block">
+          <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
         {stats.map((stat) => (
-          <Card key={stat.name} className="hover:shadow-lg transition-shadow p-4 sm:p-6">
-            <div className="flex items-center">
-              <div className={`p-2 sm:p-3 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${stat.color}`} />
+          <motion.div
+            key={stat.name}
+            variants={item}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            onClick={() => navigate(stat.path)}
+            className={`
+              relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border ${stat.borderColor}
+              cursor-pointer hover:shadow-md transition-shadow group
+            `}
+          >
+            <div className="flex flex-col h-full justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300`}>
+                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
+                {stat.trend && (
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full bg-opacity-10 ${stat.bgColor} ${stat.trendColor}`}>
+                    {stat.trend}
+                  </span>
+                )}
               </div>
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{stat.name}</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{stat.value}</p>
+
+              <div>
+                <p className="text-sm font-medium text-gray-500">{stat.name}</p>
+                <div className="flex items-baseline mt-1">
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                </div>
               </div>
+
+              <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-5 bg-gradient-to-br from-gray-900 to-transparent pointer-events-none" />
             </div>
-          </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Section notifications sélections en attente */}
       {pendingSelections.length > 0 && (
-        <Card className="p-4 sm:p-6 border-orange-200 bg-orange-50">
-          <div className="flex items-center mb-3 sm:mb-4">
-            <AlertCircle className="w-5 h-5 text-orange-600 mr-2" />
-            <h3 className="text-base sm:text-lg font-semibold text-orange-800">
-              {pendingSelections.length} nouvelle(s) sélection(s) en attente
-            </h3>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-2xl p-6 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Building className="w-32 h-32 text-orange-600" />
           </div>
-          <p className="text-sm text-orange-700">
-            Des clients ont soumis leurs sélections de matériaux et attendent votre validation.
-          </p>
-        </Card>
+          <div className="flex items-center relative z-10 flex-wrap gap-4">
+            <div className="flex items-center">
+              <div className="p-3 bg-white rounded-full shadow-sm mr-4">
+                <AlertCircle className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-orange-900">
+                  Action requise : {pendingSelections.length} sélection(s) en attente
+                </h3>
+                <p className="text-orange-700 mt-1">
+                  Des clients ont soumis leurs sélections de matériaux.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/clients')} // Pas de page dédiée selections, on va vers clients ou on pourrait filtrer
+              className="ml-auto px-4 py-2 bg-white text-orange-700 text-sm font-bold rounded-lg shadow-sm hover:bg-orange-50 transition-colors"
+            >
+              Voir les sélections
+            </button>
+          </div>
+        </motion.div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <Card className="p-4 sm:p-6">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-            Derniers clients ajoutés
-          </h3>
-          <div className="space-y-2 sm:space-y-3">
-            {recentClients.length > 0 ? (
-              recentClients.map((client) => (
-                <div
-                  key={client.id}
-                  className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{client.nom} {client.prenom}</p>
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">{client.projetAdhere}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <Card className="border-gray-100 shadow-sm overflow-hidden h-full">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Clients Récents</h3>
+                <p className="text-sm text-gray-500">Derniers clients ajoutés</p>
+              </div>
+              <button
+                onClick={() => navigate('/clients')}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center transition-colors"
+              >
+                Voir tout <ChevronRight className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {recentClients.length > 0 ? (
+                recentClients.map((client, index) => (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    key={client.id}
+                    className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group cursor-pointer"
+                    onClick={() => navigate('/clients')}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-sm">
+                        {client.prenom[0]}{client.nom[0]}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{client.nom} {client.prenom}</p>
+                        <div className="flex items-center text-xs text-gray-500 mt-0.5">
+                          <Building className="w-3 h-3 mr-1" />
+                          {client.projetAdhere || 'Non assigné'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${client.status === 'En cours'
+                            ? 'bg-blue-50 text-blue-700 border-blue-100'
+                            : client.status === 'Terminé'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                              : 'bg-amber-50 text-amber-700 border-amber-100'
+                          }`}
+                      >
+                        {client.status === 'En cours' && <Activity className="w-3 h-3 mr-1" />}
+                        {client.status}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-gray-300 ml-4 group-hover:text-gray-500 transition-colors" />
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-gray-500 bg-gray-50 m-4 rounded-xl border border-dashed border-gray-200">
+                  <Users className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                  <p>Aucun client enregistré pour le moment</p>
+                  <button
+                    onClick={() => navigate('/clients')}
+                    className="mt-4 text-blue-600 font-medium hover:underline"
+                  >
+                    Ajouter un client
+                  </button>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-1">
+          <Card className="border-gray-100 shadow-sm h-full bg-gradient-to-b from-gray-900 to-gray-800 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+            <div className="relative z-10 p-6 flex flex-col h-full justify-between">
+              <div>
+                <h3 className="text-xl font-bold mb-2">Aperçu Rapide</h3>
+                <p className="text-gray-400 text-sm mb-6">Résumé de la performance globale.</p>
+
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-300">Total Projets</span>
+                      <span className="font-bold">{clients.length}</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                    </div>
                   </div>
-                  <div className="text-right ml-2 flex-shrink-0">
-                    <span
-                      className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full ${
-                        client.status === 'En cours'
-                          ? 'bg-green-100 text-green-800'
-                          : client.status === 'Terminé'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {client.status}
-                    </span>
+
+                  <div>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-300">Actifs</span>
+                      <span className="font-bold">{clients.filter(c => c.status === 'En cours').length}</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-indigo-500 h-2 rounded-full"
+                        style={{ width: `${clients.length > 0 ? (clients.filter(c => c.status === 'En cours').length / clients.length) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-300">Terminés</span>
+                      <span className="font-bold">{clients.filter(c => c.status === 'Terminé').length}</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-emerald-500 h-2 rounded-full"
+                        style={{ width: `${clients.length > 0 ? (clients.filter(c => c.status === 'Terminé').length / clients.length) * 100 : 0}%` }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm sm:text-base text-gray-500 text-center py-3 sm:py-4">
-                Aucun client enregistré
-              </p>
-            )}
-          </div>
-        </Card>
+              </div>
 
-        <Card className="p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-              Sélections clients récentes
-            </h3>
-            <ShoppingCart className="w-5 h-5 text-gray-400" />
-          </div>
-          <div className="space-y-2 sm:space-y-3">
-            {recentSelections.length > 0 ? (
-              recentSelections.map((selection) => (
-                <div
-                  key={selection.id}
-                  className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm sm:text-base font-medium text-gray-900 truncate">
-                        {selection.clientName}
-                      </p>
-                      <p className="text-xs sm:text-sm text-gray-500">
-                        {formatDateTime(selection.submittedAt)}
-                      </p>
-                    </div>
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        selection.status === 'submitted'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : selection.status === 'approved'
-                          ? 'bg-green-100 text-green-800'
-                          : selection.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {selection.status === 'submitted'
-                        ? 'En attente'
-                        : selection.status === 'approved'
-                        ? 'Approuvé'
-                        : selection.status === 'rejected'
-                        ? 'Rejeté'
-                        : 'En révision'}
-                    </span>
-                  </div>
-
-                  <div className="mb-2">
-                    <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                      {selection.selections.length} matériau(x) • {formatPrice(selection.totalAmount)}
-                    </p>
-                    <div className="text-xs text-gray-500">
-                      {selection.selections.slice(0, 2).map((item, index) => (
-                        <span key={index}>
-                          {item.materialName}
-                          {index < Math.min(selection.selections.length - 1, 1) && ', '}
-                        </span>
-                      ))}
-                      {selection.selections.length > 2 && (
-                        <span> +{selection.selections.length - 2} autre(s)</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {selection.status === 'submitted' && (
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleStatusUpdate(selection.id, 'approved')}
-                        className="flex-1 px-3 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 transition-colors"
-                      >
-                        Approuver
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate(selection.id, 'rejected')}
-                        className="flex-1 px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
-                      >
-                        Rejeter
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm sm:text-base text-gray-500 text-center py-3 sm:py-4">
-                Aucune sélection client
-              </p>
-            )}
-          </div>
-        </Card>
+              <button
+                onClick={() => navigate('/chantiers')}
+                className="mt-8 w-full py-3 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center justify-center"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Voir les statistiques
+              </button>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

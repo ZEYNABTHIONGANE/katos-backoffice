@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { Plus, Users as UsersIcon, Shield, Key, Trash2, Copy, Ban, CheckCircle, UserX, RotateCw, HardHat } from 'lucide-react';
+import { Plus, Users as UsersIcon, Shield, Key, Trash2, Copy, Ban, CheckCircle, RotateCw, HardHat } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
@@ -183,31 +183,6 @@ export const Users: React.FC = () => {
     );
   };
 
-  const handleDeleteUser = (user: FirebaseUser) => {
-    if (!userData) return;
-
-    confirm(
-      async () => {
-        try {
-          const result = await authService.deleteUser(user.uid);
-          if (result.success) {
-            toast.success('Utilisateur supprimé avec succès');
-            await loadUsers();
-          } else {
-            toast.error(result.error || 'Erreur lors de la suppression');
-          }
-        } catch (error) {
-          toast.error('Erreur lors de la suppression');
-        }
-      },
-      {
-        title: 'Supprimer l\'utilisateur',
-        message: `Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur "${user.displayName}" ? Cette action est irréversible.`,
-        confirmText: 'Supprimer',
-        type: 'danger'
-      }
-    );
-  };
 
   const getRoleText = (role: UserRole) => {
     switch (role) {
@@ -630,17 +605,6 @@ Mot de passe: ${result.tempPassword}
                                 }
                               >
                                 {(user.isBlocked || false) ? 'Débloquer' : 'Bloquer'}
-                              </Button>
-                            )}
-                            {canModifyUser && !isSuperAdmin && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDeleteUser(user)}
-                                icon={<UserX className="w-4 h-4" />}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                Supprimer
                               </Button>
                             )}
                             {isSuperAdmin && !isCurrentUser && (

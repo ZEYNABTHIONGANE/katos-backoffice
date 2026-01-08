@@ -319,15 +319,41 @@ export class AuthService {
   // Supprimer un utilisateur
   async deleteUser(uid: string): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log('Tentative de suppression de l\'utilisateur:', uid);
+
+      // Vérifier que l'utilisateur existe avant de le supprimer
       const userRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        console.log('Utilisateur non trouvé:', uid);
+        return {
+          success: false,
+          error: 'Utilisateur non trouvé'
+        };
+      }
+
+      const userData = userDoc.data();
+      console.log('Données utilisateur à supprimer:', userData);
+
+      // Si c'est un client, supprimer aussi le document client associé
+      if (userData.role === 'client' && userData.clientId) {
+        console.log('Suppression du document client:', userData.clientId);
+        const clientRef = doc(db, 'clients', userData.clientId);
+        await deleteDoc(clientRef);
+        console.log('Document client supprimé:', userData.clientId);
+      }
+
+      console.log('Suppression du document utilisateur pour:', uid);
       await deleteDoc(userRef);
 
+      console.log('Suppression complète réussie pour:', uid);
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la suppression de l\'utilisateur:', error);
       return {
         success: false,
-        error: 'Erreur lors de la suppression'
+        error: error.message || 'Erreur lors de la suppression'
       };
     }
   }

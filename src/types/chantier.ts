@@ -11,10 +11,10 @@ export interface ChantierPhase {
   progress: number; // 0-100%
 
   // Planning
-  plannedStartDate?: Timestamp;
-  plannedEndDate?: Timestamp;
-  actualStartDate?: Timestamp;
-  actualEndDate?: Timestamp;
+  plannedStartDate?: Timestamp | null;
+  plannedEndDate?: Timestamp | null;
+  actualStartDate?: Timestamp | null;
+  actualEndDate?: Timestamp | null;
 
   // Resources
   assignedTeamMembers: string[]; // Team member IDs
@@ -45,6 +45,7 @@ export interface ProgressPhoto {
   url: string;
   type: 'image' | 'video'; // Media type
   phaseId?: string; // Optional: link to specific phase
+  stepId?: string; // Optional: link to specific step
   description?: string;
   uploadedAt: Timestamp;
   uploadedBy: string;
@@ -86,7 +87,7 @@ export interface FirebaseChantier {
   globalProgress: number; // 0-100% calculated from phases
   startDate: Timestamp;
   plannedEndDate: Timestamp;
-  actualEndDate?: Timestamp;
+  actualEndDate?: Timestamp | null;
 
   // Phase management - Updated to use KatosChantierPhase
   phases: KatosChantierPhase[];
@@ -103,7 +104,7 @@ export interface FirebaseChantier {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy: string; // Admin who created the chantier
-  coverImage?: string; // URL of the cover image
+  coverImage?: string | null; // URL of the cover image
 }
 
 // Types pour la structure hiérarchique des phases Katos
@@ -114,9 +115,10 @@ export interface PhaseStep {
   status: PhaseStatus;
   progress: number; // 0-100%
   estimatedDuration: number; // en jours
-  actualStartDate?: Timestamp;
-  actualEndDate?: Timestamp;
+  actualStartDate?: Timestamp | null;
+  actualEndDate?: Timestamp | null;
   notes?: string;
+  photos?: string[];
 }
 
 // Extension de ChantierPhase pour supporter les sous-étapes
