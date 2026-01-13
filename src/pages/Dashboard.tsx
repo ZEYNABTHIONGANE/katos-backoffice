@@ -1,60 +1,83 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Building, Clock, CheckCircle, ChevronRight, TrendingUp, Activity, AlertCircle } from 'lucide-react';
+import { Users, Building2, FileText, ChevronRight, TrendingUp, Activity, AlertCircle, HardHat } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { useClientStore } from '../store/clientStore';
 import { useClientSelections } from '../hooks/useClientSelections';
+import { useProjectStore } from '../store/projectStore';
+import { useRealtimeChantiers } from '../hooks/useRealtimeChantiers';
+import { unifiedDocumentService } from '../services/unifiedDocumentService';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { clients } = useClientStore();
   const { clientSelections } = useClientSelections();
+  const { projects } = useProjectStore();
+  const { totalChantiers, chantiersActifs } = useRealtimeChantiers();
+  const [docCount, setDocCount] = useState(0);
+
+  useEffect(() => {
+    const fetchDocCount = async () => {
+      try {
+        const promises = clients.map(client => unifiedDocumentService.getClientDocuments(client.id));
+        const results = await Promise.all(promises);
+        const total = results.reduce((acc, docs) => acc + docs.length, 0);
+        setDocCount(total);
+      } catch (error) {
+        console.error('Error fetching document count:', error);
+      }
+    };
+
+    if (clients.length > 0) {
+      fetchDocCount();
+    }
+  }, [clients]);
 
   const stats = [
     {
-      name: 'Total Clients',
+      name: 'Clients',
       value: clients.length,
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-100',
       path: '/clients',
-      trend: `${clients.length > 0 ? '+1' : '0'} ce mois`,
-      trendColor: 'text-green-600'
+      trend: `${clients.filter(c => c.status === 'En cours').length} actifs`,
+      trendColor: 'text-blue-600'
     },
     {
-      name: 'Projets en cours',
-      value: clients.filter(client => client.status === 'En cours').length,
-      icon: Activity,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-      borderColor: 'border-indigo-100',
-      path: '/clients', // Naviguer vers clients car c'est là qu'on voit les statuts
-      trend: 'Actifs',
-      trendColor: 'text-indigo-600'
-    },
-    {
-      name: 'Projets en attente',
-      value: clients.filter(client => client.status === 'En attente').length,
-      icon: Clock,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50',
-      borderColor: 'border-amber-100',
-      path: '/clients',
-      trend: 'Action requise',
-      trendColor: 'text-amber-600'
-    },
-    {
-      name: 'Projets terminés',
-      value: clients.filter(client => client.status === 'Terminé').length,
-      icon: CheckCircle,
+      name: 'Villas',
+      value: projects.length,
+      icon: Building2,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
       borderColor: 'border-emerald-100',
-      path: '/clients',
-      trend: 'Complétés',
+      path: '/projects',
+      trend: 'Modèles disponibles',
       trendColor: 'text-emerald-600'
+    },
+    {
+      name: 'Projets',
+      value: totalChantiers,
+      icon: HardHat,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-100',
+      path: '/chantiers',
+      trend: `${chantiersActifs} en cours`,
+      trendColor: 'text-orange-600'
+    },
+    {
+      name: 'Documents',
+      value: docCount,
+      icon: FileText,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
+      borderColor: 'border-indigo-100',
+      path: '/documents',
+      trend: 'Totalfichiers',
+      trendColor: 'text-indigo-600'
     },
   ];
 
@@ -140,7 +163,7 @@ export const Dashboard: React.FC = () => {
           className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-2xl p-6 relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Building className="w-32 h-32 text-orange-600" />
+            <Building2 className="w-32 h-32 text-orange-600" />
           </div>
           <div className="flex items-center relative z-10 flex-wrap gap-4">
             <div className="flex items-center">
@@ -199,7 +222,7 @@ export const Dashboard: React.FC = () => {
                       <div>
                         <p className="font-semibold text-gray-900">{client.nom} {client.prenom}</p>
                         <div className="flex items-center text-xs text-gray-500 mt-0.5">
-                          <Building className="w-3 h-3 mr-1" />
+                          <Building2 className="w-3 h-3 mr-1" />
                           {client.projetAdhere || 'Non assigné'}
                         </div>
                       </div>
@@ -207,10 +230,10 @@ export const Dashboard: React.FC = () => {
                     <div className="flex items-center">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${client.status === 'En cours'
-                            ? 'bg-blue-50 text-blue-700 border-blue-100'
-                            : client.status === 'Terminé'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                              : 'bg-amber-50 text-amber-700 border-amber-100'
+                          ? 'bg-blue-50 text-blue-700 border-blue-100'
+                          : client.status === 'Terminé'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                            : 'bg-amber-50 text-amber-700 border-amber-100'
                           }`}
                       >
                         {client.status === 'En cours' && <Activity className="w-3 h-3 mr-1" />}

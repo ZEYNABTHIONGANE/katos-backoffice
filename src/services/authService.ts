@@ -7,7 +7,8 @@ import {
   onAuthStateChanged,
   updatePassword,
   EmailAuthProvider,
-  reauthenticateWithCredential
+  reauthenticateWithCredential,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp, deleteDoc, collection, getDocs, updateDoc, query, orderBy, where } from 'firebase/firestore';
 import { auth, db, app } from '../config/firebase';
@@ -397,6 +398,28 @@ export class AuthService {
       return {
         success: false,
         error: 'Erreur lors de la régénération des accès'
+      };
+    }
+  }
+
+  // Envoyer un email de réinitialisation de mot de passe
+  async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Erreur lors de l\'envoi de l\'email de réinitialisation:', error);
+      let errorMessage = 'Erreur lors de l\'envoi de l\'email';
+
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'Aucun compte associé à cet email';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Email invalide';
+      }
+
+      return {
+        success: false,
+        error: errorMessage
       };
     }
   }

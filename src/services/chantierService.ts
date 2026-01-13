@@ -269,8 +269,8 @@ export class ChantierService {
                 notes: notes || step.notes,
                 updatedBy: updatedBy || 'system',
                 // Mettre à jour les dates selon le progrès
-                actualStartDate: step.actualStartDate || (newProgress > 0 ? now : undefined),
-                actualEndDate: newProgress >= 100 ? now : (newProgress < 100 ? undefined : step.actualEndDate)
+                actualStartDate: step.actualStartDate || (newProgress > 0 ? now : null),
+                actualEndDate: newProgress >= 100 ? now : (newProgress < 100 ? null : step.actualEndDate)
               };
             }
             return step;

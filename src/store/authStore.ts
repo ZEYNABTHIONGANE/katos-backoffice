@@ -15,6 +15,7 @@ interface FirebaseAuthState {
   setUserData: (userData: FirebaseUser | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useAuthStore = create<FirebaseAuthState>((set, get) => ({
@@ -23,6 +24,21 @@ export const useAuthStore = create<FirebaseAuthState>((set, get) => ({
   isAuthenticated: false,
   loading: true,
   error: null,
+
+  resetPassword: async (email: string) => {
+    try {
+      set({ loading: true, error: null });
+      const result = await authService.resetPassword(email);
+      set({ loading: false });
+      return result;
+    } catch (error: any) {
+      set({
+        error: error.message || 'Erreur inconnue',
+        loading: false
+      });
+      return { success: false, error: error.message };
+    }
+  },
 
   login: async (email: string, password: string) => {
     try {
