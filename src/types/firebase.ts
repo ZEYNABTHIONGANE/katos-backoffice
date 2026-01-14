@@ -27,6 +27,7 @@ export interface FirebaseClient {
   localisationSite: string;
   projetAdhere: string;
   status: 'En cours' | 'Terminé' | 'En attente';
+  isActive?: boolean;
   invitationStatus: 'pending' | 'sent' | 'accepted' | 'declined';
   invitationToken?: string;
   userId?: string; // Lié à l'utilisateur une fois qu'il accepte l'invitation

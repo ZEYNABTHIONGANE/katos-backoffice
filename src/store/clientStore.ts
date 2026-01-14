@@ -14,6 +14,7 @@ interface ClientForApp {
   localisationSite: string;
   projetAdhere: string;
   status: 'En cours' | 'Terminé' | 'En attente';
+  isActive: boolean;
   invitationStatus: 'pending' | 'sent' | 'accepted' | 'declined';
   invitationToken?: string;
   userId?: string;
@@ -36,6 +37,7 @@ interface FirebaseClientState {
   setClients: (clients: ClientForApp[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  toggleClientStatus: (client: ClientForApp) => Promise<boolean>;
 }
 
 // Fonction pour convertir FirebaseClient vers ClientForApp
@@ -76,6 +78,7 @@ const convertFirebaseClient = (firebaseClient: FirebaseClient): ClientForApp => 
       localisationSite: firebaseClient.localisationSite || '',
       projetAdhere: firebaseClient.projetAdhere || '',
       status: finalStatus,
+      isActive: firebaseClient.isActive !== false, // Default to true if undefined
       invitationStatus: firebaseClient.invitationStatus || 'pending',
       invitationToken: firebaseClient.invitationToken || undefined,
       userId: firebaseClient.userId || undefined,
@@ -99,6 +102,7 @@ const convertFirebaseClient = (firebaseClient: FirebaseClient): ClientForApp => 
       localisationSite: '',
       projetAdhere: '',
       status: 'En attente' as const,
+      isActive: true,
       invitationStatus: 'pending' as const,
       invitationToken: undefined,
       userId: undefined,
@@ -126,6 +130,7 @@ const convertToFirebaseClient = (client: Omit<ClientForApp, 'id' | 'createdAt'>)
       localisationSite: client.localisationSite || '',
       projetAdhere: client.projetAdhere || '',
       status: client.status || 'En attente',
+      isActive: client.isActive !== undefined ? client.isActive : true,
       invitationStatus: client.invitationStatus || 'pending',
       typePaiement: client.typePaiement || 'comptant'
     };
@@ -165,7 +170,9 @@ const convertToFirebaseClient = (client: Omit<ClientForApp, 'id' | 'createdAt'>)
       localisationSite: client.localisationSite || '',
       projetAdhere: client.projetAdhere || '',
       status: 'En attente' as const,
-      invitationStatus: 'pending' as const
+      isActive: true,
+      invitationStatus: 'pending' as const,
+      typePaiement: 'comptant' as const
     };
   }
 };
@@ -216,6 +223,7 @@ export const useClientStore = create<FirebaseClientState>((set, get) => ({
       if (updates.localisationSite) firebaseUpdates.localisationSite = updates.localisationSite;
       if (updates.projetAdhere) firebaseUpdates.projetAdhere = updates.projetAdhere;
       if (updates.status) firebaseUpdates.status = updates.status;
+      if (updates.isActive !== undefined) firebaseUpdates.isActive = updates.isActive;
       if (updates.invitationStatus) firebaseUpdates.invitationStatus = updates.invitationStatus;
       if (updates.invitationToken) firebaseUpdates.invitationToken = updates.invitationToken;
       if (updates.userId) firebaseUpdates.userId = updates.userId;
@@ -244,6 +252,24 @@ export const useClientStore = create<FirebaseClientState>((set, get) => ({
     } catch (error: any) {
       set({
         error: error.message || 'Erreur lors de la suppression du client',
+        loading: false
+      });
+      return false;
+    }
+  },
+
+  toggleClientStatus: async (client) => {
+    try {
+      set({ loading: true, error: null });
+      const newStatus = !client.isActive;
+      await clientService.updateClient(client.id, { isActive: newStatus });
+      console.log(`Client ${client.id} status toggled to ${newStatus}`);
+      set({ loading: false });
+      return true;
+    } catch (error: any) {
+      console.error('Erreur lors du changement de statut:', error);
+      set({
+        error: error.message || 'Erreur lors du changement de statut',
         loading: false
       });
       return false;

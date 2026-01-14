@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Edit, Trash2, Phone, MapPin, Users, Mail } from 'lucide-react';
+import { Plus, Eye, Edit, Phone, MapPin, Users, Mail, Power, Filter } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Timestamp } from 'firebase/firestore';
 import { Card } from '../components/ui/Card';
@@ -15,8 +15,9 @@ import type { Client } from '../types';
 import type { FirebaseClient } from '../types/firebase';
 
 export const Clients: React.FC = () => {
-  const { clients, addClient, updateClient, deleteClient, initializeClients } = useClientStore();
+  const { clients, addClient, updateClient, initializeClients, toggleClientStatus } = useClientStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [selectedClient, setSelectedClient] = useState<Client | undefined>();
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [viewingClient, setViewingClient] = useState<Client | undefined>();
@@ -40,7 +41,9 @@ export const Clients: React.FC = () => {
     localisationSite: client.localisationSite,
     projetAdhere: client.projetAdhere,
     status: client.status,
+    isActive: client.isActive,
     invitationStatus: client.invitationStatus,
+    typePaiement: client.typePaiement,
     invitationToken: client.invitationToken,
     userId: client.userId,
     username: client.username,
@@ -84,24 +87,34 @@ export const Clients: React.FC = () => {
     }
   };
 
-  const handleDeleteClient = (client: Client) => {
+
+
+
+  const handleToggleStatus = async (client: Client) => {
+    const action = client.isActive ? 'désactiver' : 'activer';
     confirm(
       async () => {
-        const success = await deleteClient(client.id);
+        const success = await toggleClientStatus(client as any); // Using as any because types mismatch slightly
         if (success) {
-          toast.success('Client supprimé avec succès');
+          toast.success(`Client ${action} avec succès`);
         } else {
-          toast.error('Erreur lors de la suppression du client');
+          toast.error(`Erreur lors de l'${action === 'activer' ? 'activation' : 'désactivation'} du client`);
         }
       },
       {
-        title: 'Supprimer',
-        message: `Êtes-vous sûr de vouloir supprimer le client "${client.prenom} ${client.nom}" ? Cette action est irréversible.`,
-        confirmText: 'Supprimer le client',
-        type: 'danger'
+        title: `${client.isActive ? 'Désactiver' : 'Activer'} le client`,
+        message: `Êtes-vous sûr de vouloir ${action} le client "${client.prenom} ${client.nom}" ? ${client.isActive ? 'Il ne pourra plus accéder à l\'application.' : 'Il pourra de nouveau accéder à l\'application.'}`,
+        confirmText: client.isActive ? 'Désactiver' : 'Activer',
+        type: client.isActive ? 'danger' : 'info'
       }
     );
   };
+
+  const filteredClients = clients.filter(client => {
+    if (statusFilter === 'active') return client.isActive;
+    if (statusFilter === 'inactive') return !client.isActive;
+    return true;
+  });
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -128,15 +141,31 @@ export const Clients: React.FC = () => {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Clients</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">Gérez vos clients et leurs projets</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Nouveau client
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="appearance-none bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+            >
+              <option value="all">Tous les clients</option>
+              <option value="active">Actifs</option>
+              <option value="inactive">Inactifs</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <Filter className="h-4 w-4" />
+            </div>
+          </div>
+          <Button onClick={() => setIsModalOpen(true)} className="flex-1 sm:flex-none">
+            <Plus className="w-4 h-4 mr-2" />
+            Nouveau client
+          </Button>
+        </div>
       </div>
 
 
       <Card className="p-0 sm:p-6">
-        {clients.length > 0 ? (
+        {filteredClients.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -162,7 +191,7 @@ export const Clients: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {clients.map((client) => (
+                {filteredClients.map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50">
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                       <div>
@@ -197,28 +226,34 @@ export const Clients: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <span
-                        className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full ${getStatusColor(
-                          client.status
-                        )}`}
-                      >
-                        <span className="hidden sm:inline">{client.status}</span>
-                        <span className="sm:hidden">
-                          {client.status === 'En cours' ? 'EC' : client.status === 'Terminé' ? 'T' : 'EA'}
+                      <div className="flex flex-col gap-1">
+                        <span
+                          className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full w-fit ${getStatusColor(
+                            client.status
+                          )}`}
+                        >
+                          <span className="hidden sm:inline">{client.status}</span>
+                          <span className="sm:hidden">
+                            {client.status === 'En cours' ? 'EC' : client.status === 'Terminé' ? 'T' : 'EA'}
+                          </span>
                         </span>
-                      </span>
+                        {!client.isActive && (
+                          <span className="inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 w-fit">
+                            Inactif
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          client.userId ? 'bg-green-500' :
+                        <div className={`w-2 h-2 rounded-full ${client.userId ? 'bg-green-500' :
                           client.email ? 'bg-yellow-500' :
-                          'bg-gray-300'
-                        }`} />
+                            'bg-gray-300'
+                          }`} />
                         <span className="text-xs text-gray-600">
                           {client.userId ? 'Connecté' :
-                           client.email ? 'Compte créé' :
-                           'Pas de compte'}
+                            client.email ? 'Compte créé' :
+                              'Pas de compte'}
                         </span>
                       </div>
                     </td>
@@ -257,14 +292,15 @@ export const Clients: React.FC = () => {
                         >
                           <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Button>
+
                         <Button
-                          variant="danger"
+                          variant={client.isActive ? "outline" : "outline"}
                           size="sm"
-                          onClick={() => handleDeleteClient(client)}
-                          className="p-1 sm:p-2"
-                          title="Supprimer"
+                          onClick={() => handleToggleStatus(client)}
+                          className={`p-1 sm:p-2 ${!client.isActive ? 'text-gray-400' : 'text-red-500 hover:text-red-700'}`}
+                          title={client.isActive ? "Désactiver" : "Activer"}
                         >
-                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Power className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Button>
                       </div>
                     </td>
@@ -311,38 +347,42 @@ export const Clients: React.FC = () => {
         loading={confirmState.loading}
       />
 
-      {viewingClient && (
-        <ClientDetailsModal
-          isOpen={isDetailsModalOpen}
-          onClose={() => {
-            setIsDetailsModalOpen(false);
-            setViewingClient(undefined);
-          }}
-          client={viewingClient}
-          onUpdate={() => {
-            // Les données seront automatiquement mises à jour via le listener en temps réel
-          }}
-        />
-      )}
-
-      {invitationClient && (
-        <Modal
-          isOpen={isInvitationsModalOpen}
-          onClose={() => {
-            setIsInvitationsModalOpen(false);
-            setInvitationClient(undefined);
-          }}
-          title={`Invitations - ${invitationClient.prenom} ${invitationClient.nom}`}
-          size="lg"
-        >
-          <ClientInvitations
-            client={convertToFirebaseClient(invitationClient)}
+      {
+        viewingClient && (
+          <ClientDetailsModal
+            isOpen={isDetailsModalOpen}
+            onClose={() => {
+              setIsDetailsModalOpen(false);
+              setViewingClient(undefined);
+            }}
+            client={viewingClient}
             onUpdate={() => {
               // Les données seront automatiquement mises à jour via le listener en temps réel
             }}
           />
-        </Modal>
-      )}
-    </div>
+        )
+      }
+
+      {
+        invitationClient && (
+          <Modal
+            isOpen={isInvitationsModalOpen}
+            onClose={() => {
+              setIsInvitationsModalOpen(false);
+              setInvitationClient(undefined);
+            }}
+            title={`Invitations - ${invitationClient.prenom} ${invitationClient.nom}`}
+            size="lg"
+          >
+            <ClientInvitations
+              client={convertToFirebaseClient(invitationClient)}
+              onUpdate={() => {
+                // Les données seront automatiquement mises à jour via le listener en temps réel
+              }}
+            />
+          </Modal>
+        )
+      }
+    </div >
   );
 };

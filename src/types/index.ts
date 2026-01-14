@@ -14,6 +14,7 @@ export interface Client {
   localisationSite: string;
   projetAdhere: string;
   status: 'En cours' | 'Terminé' | 'En attente';
+  isActive: boolean;
   invitationStatus: 'pending' | 'sent' | 'accepted' | 'declined';
   invitationToken?: string;
   userId?: string;
