@@ -11,6 +11,7 @@ import { UserRole } from '../../types/roles';
 import type { FirebaseUser } from '../../types/firebase';
 import { chantierService } from '../../services/chantierService';
 import { storageService } from '../../services/storageService';
+import { useAuthStore } from '../../store/authStore';
 import { toast } from 'react-toastify';
 
 interface ChantierModalProps {
@@ -28,6 +29,7 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
 }) => {
   const { clients } = useClientStore();
   const { projects } = useProjectStore();
+  const { userData } = useAuthStore();
   const [chefs, setChefs] = useState<FirebaseUser[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -224,20 +226,24 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
       }
 
       if (chantier) {
+        console.log('📝 [ChantierModal] Mode édition - Mise à jour du chantier...', chantier.id);
         // Mode édition - Mise à jour du chantier existant
         const updates: any = {
           name: formData.name,
           address: formData.address,
           assignedChefId: formData.assignedChefId,
           coverImage: coverImageUrl || null,
+          updatedAt: new Date()
         };
 
         if (formData.startDate) updates.startDate = new Date(formData.startDate);
         if (formData.plannedEndDate) updates.plannedEndDate = new Date(formData.plannedEndDate);
 
         await chantierService.updateChantier(chantier.id, updates);
+        console.log('✅ [ChantierModal] Chantier modifié avec succès!');
         toast.success('Chantier modifié avec succès!');
       } else {
+        console.log('🆕 [ChantierModal] Mode création - Nouveau chantier...');
         // Mode création - Créer un nouveau chantier
         await chantierService.createChantierFromTemplate(
           formData.clientId,
@@ -250,17 +256,21 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
             plannedEndDate: new Date(formData.plannedEndDate),
             coverImage: coverImageUrl
           },
-          'admin' // TODO: Récupérer l'ID de l'utilisateur connecté
+          userData?.uid || 'admin'
         );
+        console.log('✅ [ChantierModal] Chantier créé avec succès!');
         toast.success('Chantier créé avec succès!');
       }
 
-      handleClose();
+      console.log('🏁 [ChantierModal] Fermeture de la modal...');
+      // IMPORTANT: onSuccess se charge déjà de fermer la modal via handleCloseModal dans le parent
+      // On ne l'appelle qu'une fois pour éviter les re-renders inutiles
       onSuccess();
     } catch (error: any) {
-      console.error('Erreur lors de la sauvegarde du chantier:', error);
+      console.error('❌ [ChantierModal] Erreur lors de la sauvegarde:', error);
       toast.error(error.message || `Erreur lors de la ${chantier ? 'modification' : 'création'} du chantier`);
     } finally {
+      console.log('⏳ [ChantierModal] Fin du chargement.');
       setLoading(false);
     }
   };
