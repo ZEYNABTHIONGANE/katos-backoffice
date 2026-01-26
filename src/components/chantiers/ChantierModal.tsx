@@ -30,7 +30,7 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
   const { projects } = useProjectStore();
   const [chefs, setChefs] = useState<FirebaseUser[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -50,10 +50,12 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
   useEffect(() => {
     const loadChefs = async () => {
       try {
+        console.log('🔄 Chargement des chefs disponibles...');
         const availableChefs = await userService.getAvailableChefs();
+        console.log(`✅ ${availableChefs.length} chefs chargés:`, availableChefs);
         setChefs(availableChefs);
       } catch (error) {
-        console.error('Erreur lors du chargement des chefs:', error);
+        console.error('❌ Erreur lors du chargement des chefs:', error);
         toast.error('Erreur lors du chargement des chefs de chantier');
       }
     };
@@ -187,7 +189,7 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
       if (!formData.startDate) newErrors.startDate = 'La date de début est requise';
       if (!formData.plannedEndDate) newErrors.plannedEndDate = 'La date de fin prévue est requise';
     }
-    
+
     if (!formData.name) newErrors.name = 'Le nom du chantier est requis';
     if (!formData.address) newErrors.address = 'L\'adresse du chantier est requise';
     if (!formData.assignedChefId) newErrors.assignedChefId = 'Le chef de chantier est requis';
@@ -295,15 +297,15 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
             <label className="block text-sm font-semibold text-gray-900">
               Image de couverture
             </label>
-            
+
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-primary-500 transition-colors cursor-pointer relative"
-                 onClick={() => document.getElementById('cover-image-upload')?.click()}>
-              
+              onClick={() => document.getElementById('cover-image-upload')?.click()}>
+
               {previewUrl ? (
                 <div className="relative w-full h-48">
-                  <img 
-                    src={previewUrl} 
-                    alt="Cover preview" 
+                  <img
+                    src={previewUrl}
+                    alt="Cover preview"
                     className="w-full h-full object-cover rounded-md"
                   />
                   <button
@@ -324,14 +326,14 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
                   <div className="flex text-sm text-gray-600 justify-center">
                     <label htmlFor="cover-image-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
                       <span>Télécharger une photo</span>
-                      <input 
-                        id="cover-image-upload" 
-                        name="cover-image-upload" 
-                        type="file" 
-                        className="sr-only" 
+                      <input
+                        id="cover-image-upload"
+                        name="cover-image-upload"
+                        type="file"
+                        className="sr-only"
                         accept="image/*"
                         onChange={handleImageChange}
-                        onClick={(e) => e.stopPropagation()} 
+                        onClick={(e) => e.stopPropagation()}
                       />
                     </label>
                     <p className="pl-1">ou glisser-déposer</p>
@@ -437,6 +439,9 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
                   </option>
                 );
               })}
+              {chefs.length === 0 && (
+                <option value="" disabled>Aucun chef disponible (vérifiez les rôles)</option>
+              )}
             </select>
             {errors.assignedChefId && (
               <p className="text-red-600 text-xs mt-1">{errors.assignedChefId}</p>
