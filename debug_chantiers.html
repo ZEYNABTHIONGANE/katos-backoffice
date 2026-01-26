@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Chantiers - Relations Client-Chantier</title>
+</head>
+<body>
+    <h1>Debug Relations Client-Chantier</h1>
+    <p>Ouvrez la console pour voir les données (F12)</p>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        // Configuration Firebase (remplacez par votre config)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1B5hERfx4z4zLRk7NDlVJD66O_3fv6B8",
+            authDomain: "katos-construction.firebaseapp.com",
+            projectId: "katos-construction",
+            storageBucket: "katos-construction.firebasestorage.app",
+            messagingSenderId: "1065844419863",
+            appId: "1:1065844419863:web:69a6c9dc2b02b74c0b1fb6",
+            measurementId: "G-5J5MYD9DWF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function debugRelations() {
+            console.log('🔍 Debug des relations Client-Chantier...');
+
+            try {
+                // 1. Récupérer tous les clients
+                console.log('\n1️⃣ Récupération des clients...');
+                const clientsSnapshot = await getDocs(collection(db, 'clients'));
+                const clients = [];
+                clientsSnapshot.forEach(doc => {
+                    const clientData = { id: doc.id, ...doc.data() };
+                    clients.push(clientData);
+                    console.log(`Client: ${clientData.prenom} ${clientData.nom}`, {
+                        id: doc.id,
+                        email: clientData.email,
+                        invitationStatus: clientData.invitationStatus
+                    });
+                });
+
+                // 2. Récupérer tous les chantiers
+                console.log('\n2️⃣ Récupération des chantiers...');
+                const chantiersSnapshot = await getDocs(collection(db, 'chantiers'));
+                const chantiers = [];
+                chantiersSnapshot.forEach(doc => {
+                    const chantierData = { id: doc.id, ...doc.data() };
+                    chantiers.push(chantierData);
+                    console.log(`Chantier: ${chantierData.name}`, {
+                        id: doc.id,
+                        clientId: chantierData.clientId,
+                        assignedChefId: chantierData.assignedChefId,
+                        status: chantierData.status
+                    });
+                });
+
+                // 3. Vérifier les relations
+                console.log('\n3️⃣ Vérification des relations...');
+                for (const chantier of chantiers) {
+                    const client = clients.find(c => c.id === chantier.clientId);
+                    if (client) {
+                        console.log(`✅ Relation trouvée:`, {
+                            chantier: chantier.name,
+                            client: `${client.prenom} ${client.nom}`,
+                            clientId: chantier.clientId,
+                            invitationStatus: client.invitationStatus
+                        });
+                    } else {
+                        console.log(`❌ Relation manquante pour chantier ${chantier.name} (clientId: ${chantier.clientId})`);
+                    }
+                }
+
+                // 4. Test spécifique pour clients avec invitation acceptée
+                console.log('\n4️⃣ Test pour clients avec invitations acceptées...');
+                const acceptedClients = clients.filter(c => c.invitationStatus === 'accepted');
+                console.log(`Clients avec invitation acceptée: ${acceptedClients.length}`);
+
+                for (const client of acceptedClients) {
+                    console.log(`\n🔍 Test pour client: ${client.prenom} ${client.nom} (${client.id})`);
+
+                    // Simuler la requête de l'app mobile
+                    const q = query(collection(db, 'chantiers'), where('clientId', '==', client.id));
+                    const snapshot = await getDocs(q);
+
+                    if (!snapshot.empty) {
+                        snapshot.forEach(doc => {
+                            const chantierData = doc.data();
+                            console.log(`✅ Chantier trouvé pour ${client.prenom}:`, {
+                                chantierName: chantierData.name,
+                                status: chantierData.status,
+                                progress: chantierData.globalProgress
+                            });
+                        });
+                    } else {
+                        console.log(`❌ Aucun chantier trouvé pour ${client.prenom} ${client.nom} (clientId: ${client.id})`);
+                    }
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur lors du debug:', error);
+            }
+        }
+
+        // Lancer le debug
+        debugRelations();
+    </script>
+</body>
+</html>

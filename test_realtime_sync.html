@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Synchronisation Temps Réel - Chantiers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .dangerous {
+            background-color: #dc3545;
+        }
+        .dangerous:hover {
+            background-color: #c82333;
+        }
+        .phase-controls {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        input[type="range"] {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Test de Synchronisation Temps Réel</h1>
+    <p>Ce script permet de tester la synchronisation entre le backoffice et l'application mobile.</p>
+
+    <div id="status" class="status info">Initialisation...</div>
+
+    <h2>📊 Actions de Test</h2>
+
+    <div>
+        <h3>1. Chargement des Chantiers</h3>
+        <button onclick="loadChantiers()">🔍 Charger les chantiers</button>
+        <div id="chantiers-list"></div>
+    </div>
+
+    <div id="chantier-controls" style="display: none;">
+        <h3>2. Modifier la Progression</h3>
+        <p>Modifiez les valeurs ci-dessous pour voir la synchronisation en temps réel :</p>
+
+        <div id="phases-controls"></div>
+
+        <h3>3. Actions Rapides</h3>
+        <button onclick="simulateProgressUpdate(5)">📈 +5% Progression Globale</button>
+        <button onclick="simulateProgressUpdate(-5)">📉 -5% Progression Globale</button>
+        <button onclick="addTestPhoto()">📸 Ajouter Photo Test</button>
+        <button onclick="addTestUpdate()">📝 Ajouter Mise à Jour</button>
+    </div>
+
+    <h2>📝 Logs</h2>
+    <div id="logs" style="height: 200px; overflow-y: scroll; border: 1px solid #ddd; padding: 10px; background-color: #f8f9fa;"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, updateDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1B5hERfx4z4zLRk7NDlVJD66O_3fv6B8",
+            authDomain: "katos-construction.firebaseapp.com",
+            projectId: "katos-construction",
+            storageBucket: "katos-construction.firebasestorage.app",
+            messagingSenderId: "1065844419863",
+            appId: "1:1065844419863:web:69a6c9dc2b02b74c0b1fb6",
+            measurementId: "G-5J5MYD9DWF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let chantiers = [];
+        let selectedChantier = null;
+
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logs.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(`[${time}] ${message}`);
+        }
+
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        // Fonctions globales
+        window.loadChantiers = async function() {
+            try {
+                log('🔍 Chargement des chantiers...');
+                showStatus('Chargement des chantiers...', 'info');
+
+                const chantiersRef = collection(db, 'chantiers');
+                const snapshot = await getDocs(chantiersRef);
+
+                chantiers = [];
+                snapshot.forEach(doc => {
+                    chantiers.push({ id: doc.id, ...doc.data() });
+                });
+
+                log(`✅ ${chantiers.length} chantiers trouvés`);
+                showStatus(`${chantiers.length} chantiers chargés`, 'success');
+
+                displayChantiers();
+            } catch (error) {
+                log(`❌ Erreur lors du chargement: ${error.message}`, 'error');
+                showStatus('Erreur de chargement', 'error');
+            }
+        };
+
+        function displayChantiers() {
+            const list = document.getElementById('chantiers-list');
+            if (chantiers.length === 0) {
+                list.innerHTML = '<p>Aucun chantier trouvé</p>';
+                return;
+            }
+
+            list.innerHTML = chantiers.map(chantier =>
+                `<div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                    <strong>${chantier.name}</strong> - ${chantier.globalProgress}%
+                    <button onclick="selectChantier('${chantier.id}')" style="margin-left: 10px;">Sélectionner</button>
+                </div>`
+            ).join('');
+        }
+
+        window.selectChantier = function(chantierId) {
+            selectedChantier = chantiers.find(c => c.id === chantierId);
+            if (!selectedChantier) return;
+
+            log(`🎯 Chantier sélectionné: ${selectedChantier.name}`);
+            showStatus(`Chantier sélectionné: ${selectedChantier.name}`, 'success');
+
+            document.getElementById('chantier-controls').style.display = 'block';
+            displayPhaseControls();
+        };
+
+        function displayPhaseControls() {
+            const container = document.getElementById('phases-controls');
+            if (!selectedChantier || !selectedChantier.phases) return;
+
+            container.innerHTML = selectedChantier.phases.map(phase =>
+                `<div class="phase-controls">
+                    <h4>${phase.name} - ${phase.progress}%</h4>
+                    <input type="range" min="0" max="100" value="${phase.progress}"
+                           id="phase-${phase.id}"
+                           onchange="updatePhaseProgress('${phase.id}', this.value)">
+                    <span id="value-${phase.id}">${phase.progress}%</span>
+                </div>`
+            ).join('');
+        }
+
+        window.updatePhaseProgress = async function(phaseId, newProgress) {
+            try {
+                const progressNum = parseInt(newProgress);
+                log(`🔄 Mise à jour phase ${phaseId}: ${progressNum}%`);
+
+                // Mettre à jour localement pour feedback immédiat
+                document.getElementById(`value-${phaseId}`).textContent = progressNum + '%';
+
+                // Mettre à jour Firebase
+                const updatedPhases = selectedChantier.phases.map(phase => {
+                    if (phase.id === phaseId) {
+                        return {
+                            ...phase,
+                            progress: progressNum,
+                            lastUpdated: Timestamp.now(),
+                            updatedBy: 'test-script'
+                        };
+                    }
+                    return phase;
+                });
+
+                // Calculer nouvelle progression globale
+                const globalProgress = Math.round(
+                    updatedPhases.reduce((sum, phase) => sum + phase.progress, 0) / updatedPhases.length
+                );
+
+                const chantierRef = doc(db, 'chantiers', selectedChantier.id);
+                await updateDoc(chantierRef, {
+                    phases: updatedPhases,
+                    globalProgress: globalProgress,
+                    updatedAt: Timestamp.now()
+                });
+
+                log(`✅ Phase mise à jour. Nouvelle progression globale: ${globalProgress}%`, 'success');
+
+                // Mettre à jour la donnée locale
+                selectedChantier.phases = updatedPhases;
+                selectedChantier.globalProgress = globalProgress;
+
+            } catch (error) {
+                log(`❌ Erreur mise à jour: ${error.message}`, 'error');
+            }
+        };
+
+        window.simulateProgressUpdate = function(delta) {
+            if (!selectedChantier) {
+                log('❌ Aucun chantier sélectionné', 'error');
+                return;
+            }
+
+            // Appliquer le delta à toutes les phases
+            selectedChantier.phases.forEach(phase => {
+                const newProgress = Math.max(0, Math.min(100, phase.progress + delta));
+                const slider = document.getElementById(`phase-${phase.id}`);
+                if (slider) {
+                    slider.value = newProgress;
+                    window.updatePhaseProgress(phase.id, newProgress);
+                }
+            });
+        };
+
+        window.addTestPhoto = async function() {
+            if (!selectedChantier) {
+                log('❌ Aucun chantier sélectionné', 'error');
+                return;
+            }
+
+            try {
+                const newPhoto = {
+                    id: 'test-' + Date.now(),
+                    url: 'https://via.placeholder.com/300x200?text=Test+Photo',
+                    description: 'Photo test ajoutée via script',
+                    uploadedAt: Timestamp.now(),
+                    uploadedBy: 'test-script'
+                };
+
+                const chantierRef = doc(db, 'chantiers', selectedChantier.id);
+                await updateDoc(chantierRef, {
+                    gallery: [...selectedChantier.gallery, newPhoto],
+                    updatedAt: Timestamp.now()
+                });
+
+                log('📸 Photo test ajoutée avec succès', 'success');
+            } catch (error) {
+                log(`❌ Erreur ajout photo: ${error.message}`, 'error');
+            }
+        };
+
+        window.addTestUpdate = async function() {
+            if (!selectedChantier) {
+                log('❌ Aucun chantier sélectionné', 'error');
+                return;
+            }
+
+            try {
+                const newUpdate = {
+                    id: 'update-' + Date.now(),
+                    title: 'Mise à jour test',
+                    description: 'Ceci est une mise à jour générée automatiquement pour tester la synchronisation',
+                    type: 'general',
+                    createdAt: Timestamp.now(),
+                    createdBy: 'test-script',
+                    isVisibleToClient: true
+                };
+
+                const chantierRef = doc(db, 'chantiers', selectedChantier.id);
+                await updateDoc(chantierRef, {
+                    updates: [newUpdate, ...selectedChantier.updates],
+                    updatedAt: Timestamp.now()
+                });
+
+                log('📝 Mise à jour test ajoutée avec succès', 'success');
+            } catch (error) {
+                log(`❌ Erreur ajout mise à jour: ${error.message}`, 'error');
+            }
+        };
+
+        // Initialisation
+        log('🚀 Script de test initialisé');
+        showStatus('Prêt pour les tests', 'success');
+    </script>
+</body>
+</html>

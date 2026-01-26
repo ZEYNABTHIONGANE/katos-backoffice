@@ -1,0 +1,124 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Collection users - Accès authentifié uniquement
+    match /users/{userId} {
+      // Allow users to read/write their own document when authenticated
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Allow authenticated users to read any user document for admin purposes
+      allow read: if request.auth != null;
+
+      // Allow authenticated users (admins) to update user documents
+      allow update: if request.auth != null;
+
+      // Special rule: Allow unauthenticated read for username lookup during login
+      // This is necessary for mobile app username-based authentication
+      // Only allow if the document has a username field (indicating it's a client account)
+      allow read: if resource.data.keys().hasAll(['username', 'email']) &&
+                     resource.data.username is string &&
+                     resource.data.username.matches('^CLI[0-9]{9}$');
+    }
+
+    // Règles pour les requêtes de collection users
+    match /users/{document=**} {
+      // Allow authenticated users to query users collection for admin purposes
+      allow list: if request.auth != null;
+
+      // Allow unauthenticated queries for username lookup (login process)
+      // This is specifically for mobile app login with CLI usernames
+      allow list: if true;
+    }
+
+    // Collection clients - Accès authentifié pour le backoffice
+    match /clients/{clientId} {
+      allow read, write: if request.auth != null;
+
+      // Permettre aux utilisateurs liés de lire leurs propres données client
+      allow read: if request.auth != null &&
+                     request.auth.uid == resource.data.userId;
+
+      // Permettre aux utilisateurs de mettre à jour leur statut d'invitation
+      allow update: if request.auth != null &&
+                      request.auth.token.email == resource.data.email &&
+                      // Seulement autoriser la modification du statut d'invitation et dates
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['invitationStatus', 'acceptedAt']);
+    }
+
+    // Collection projects - Accès authentifié uniquement
+    match /projects/{projectId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Collection materials - Accès authentifié uniquement
+    match /materials/{materialId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Collection invitations - Règles spéciales
+    match /invitations/{invitationId} {
+      // Le backoffice peut tout faire
+      allow read, write: if request.auth != null;
+
+      // Les utilisateurs peuvent lire leurs propres invitations
+      allow read: if request.auth != null &&
+                     request.auth.token.email == resource.data.email;
+
+      // Les utilisateurs peuvent mettre à jour le statut de leurs invitations
+      allow update: if request.auth != null &&
+                      request.auth.token.email == resource.data.email &&
+                      // Seulement autoriser la modification du statut et dates d'acceptation
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['status', 'acceptedAt']);
+    }
+
+    // Collection pour les documents/fichiers clients (si utilisée)
+    match /client_documents/{documentId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Collection pour les notifications (si utilisée)
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Collection invitationCodes - Règles spéciales pour l'inscription
+    match /invitationCodes/{codeId} {
+      // Les administrateurs authentifiés peuvent tout faire
+      allow read, write: if request.auth != null;
+
+      // Permettre la lecture et mise à jour pour la validation des codes (inscription)
+      // Ceci est nécessaire pour que les utilisateurs non authentifiés puissent valider leur code
+      allow read, update: if true;
+    }
+
+    // Collection admins - Accès authentifié uniquement
+    match /admins/{adminId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Collection chantiers - Gestion des chantiers de construction
+    match /chantiers/{chantierId} {
+      // Les administrateurs authentifiés peuvent tout faire (lecture, écriture, création, suppression)
+      allow read, write, create, update, delete: if request.auth != null;
+
+      // Les chefs de chantier peuvent lire et mettre à jour leurs chantiers assignés
+      allow read, update: if request.auth != null &&
+                            request.auth.uid == resource.data.assignedChefId;
+
+      // Les clients peuvent seulement lire leur propre chantier
+      allow read: if request.auth != null &&
+                     request.auth.uid == resource.data.clientId;
+    }
+
+    // Règles pour les requêtes de collection chantiers
+    match /chantiers/{document=**} {
+      // Permettre aux utilisateurs authentifiés de lister les chantiers
+      // La logique métier filtrera les résultats appropriés
+      allow list: if request.auth != null;
+    }
+  }
+}
