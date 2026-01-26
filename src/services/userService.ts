@@ -168,24 +168,38 @@ export class UserService {
     }
   }
 
-  // Récupérer tous les utilisateurs qui peuvent être chefs de chantier
   async getAvailableChefs(): Promise<FirebaseUser[]> {
     try {
+      console.log('🔍 [userService] Récupération de tous les utilisateurs pour filtrer les chefs...');
       const usersRef = collection(db, 'users');
       const snapshot = await getDocs(usersRef);
 
-      const allUsers = snapshot.docs.map(doc => doc.data() as FirebaseUser);
+      const allUsers = snapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data()
+      } as FirebaseUser));
+
+      console.log(`📊 [userService] ${allUsers.length} utilisateurs trouvés au total dans la collection 'users'.`);
 
       // Filtrer les utilisateurs qui peuvent être chefs
-      const availableChefs = allUsers.filter(user =>
-        user.role === UserRole.CHEF ||
-        (user.role === UserRole.ADMIN && user.isChef === true) ||
-        user.role === UserRole.SUPER_ADMIN
-      );
+      const availableChefs = allUsers.filter(user => {
+        const isChefRole = user.role === UserRole.CHEF;
+        const isAdminChef = user.role === UserRole.ADMIN && user.isChef === true;
+        const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
 
+        if (isChefRole || isAdminChef || isSuperAdmin) {
+          console.log(`✅ [userService] Utilisateur accepté comme chef: ${user.displayName} (Role: ${user.role}, isChef: ${user.isChef})`);
+          return true;
+        }
+
+        console.log(`❌ [userService] Utilisateur filtré: ${user.displayName} (Role: ${user.role}, isChef: ${user.isChef})`);
+        return false;
+      });
+
+      console.log(`🎯 [userService] ${availableChefs.length} chefs disponibles après filtrage.`);
       return availableChefs.sort((a, b) => a.displayName.localeCompare(b.displayName));
     } catch (error) {
-      console.error('Erreur lors de la récupération des chefs disponibles:', error);
+      console.error('❌ [userService] Erreur lors de la récupération des chefs disponibles:', error);
       return [];
     }
   }
