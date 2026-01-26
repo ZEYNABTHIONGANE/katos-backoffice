@@ -188,16 +188,22 @@ export class UserService {
         const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
 
         if (isChefRole || isAdminChef || isSuperAdmin) {
-          console.log(`✅ [userService] Utilisateur accepté comme chef: ${user.displayName} (Role: ${user.role}, isChef: ${user.isChef})`);
+          console.log(`✅ [userService] Utilisateur accepté comme chef: ${user.displayName || 'Sans nom'} (Role: ${user.role}, isChef: ${user.isChef})`);
           return true;
         }
 
-        console.log(`❌ [userService] Utilisateur filtré: ${user.displayName} (Role: ${user.role}, isChef: ${user.isChef})`);
+        console.log(`❌ [userService] Utilisateur filtré: ${user.displayName || 'Sans nom'} (Role: ${user.role}, isChef: ${user.isChef})`);
         return false;
       });
 
       console.log(`🎯 [userService] ${availableChefs.length} chefs disponibles après filtrage.`);
-      return availableChefs.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+      // Trier par nom avec gestion des noms manquants pour éviter un crash
+      return availableChefs.sort((a, b) => {
+        const nameA = a.displayName || '';
+        const nameB = b.displayName || '';
+        return nameA.localeCompare(nameB);
+      });
     } catch (error) {
       console.error('❌ [userService] Erreur lors de la récupération des chefs disponibles:', error);
       return [];
