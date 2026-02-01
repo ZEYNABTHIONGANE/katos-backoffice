@@ -179,7 +179,7 @@ export class UserService {
         ...doc.data()
       } as FirebaseUser));
 
-      console.log(`📊 [userService] ${allUsers.length} utilisateurs trouvés au total dans la collection 'users'.`);
+      console.log(`📊 [userService] ${allUsers.length} utilisateurs trouvés au total.`);
 
       // Filtrer les utilisateurs qui peuvent être chefs
       const availableChefs = allUsers.filter(user => {
@@ -188,21 +188,24 @@ export class UserService {
         const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
 
         if (isChefRole || isAdminChef || isSuperAdmin) {
-          console.log(`✅ [userService] Utilisateur accepté comme chef: ${user.displayName || 'Sans nom'} (Role: ${user.role}, isChef: ${user.isChef})`);
+          console.log(`✅ [userService] Chef potentiel trouvé: ${user.displayName || 'Sans nom'} (UID: ${user.uid}, Role: ${user.role})`);
           return true;
         }
-
-        console.log(`❌ [userService] Utilisateur filtré: ${user.displayName || 'Sans nom'} (Role: ${user.role}, isChef: ${user.isChef})`);
         return false;
       });
 
-      console.log(`🎯 [userService] ${availableChefs.length} chefs disponibles après filtrage.`);
+      console.log(`🎯 [userService] ${availableChefs.length} chefs filtrés. Tri en cours...`);
 
-      // Trier par nom avec gestion des noms manquants pour éviter un crash
-      return availableChefs.sort((a, b) => {
-        const nameA = a.displayName || '';
-        const nameB = b.displayName || '';
-        return nameA.localeCompare(nameB);
+      // Trier par nom avec une sécurité maximale pour éviter "o.displayName is undefined"
+      return [...availableChefs].sort((a, b) => {
+        try {
+          const nameA = String(a?.displayName || '').trim().toLowerCase();
+          const nameB = String(b?.displayName || '').trim().toLowerCase();
+          return nameA.localeCompare(nameB);
+        } catch (sortError) {
+          console.error('⚠️ [userService] Erreur pendant le tri d\'un chef:', sortError, { chefA: a, chefB: b });
+          return 0;
+        }
       });
     } catch (error) {
       console.error('❌ [userService] Erreur lors de la récupération des chefs disponibles:', error);
@@ -303,49 +306,58 @@ export class UserService {
   // Initialiser un super admin par défaut
   async initializeSuperAdmin(email: string, password: string, displayName: string): Promise<CreateUserResult> {
     try {
-      // Vérifier si un super admin existe déjà
-      const superAdmins = await this.getUsersByRole(UserRole.SUPER_ADMIN);
-      if (superAdmins.length > 0) {
-        return {
-          success: false,
-          error: 'Un super administrateur existe déjà'
-        };
+      // 1. Vérifier si un super admin existe déjà dans Firestore
+      try {
+        const superAdmins = await this.getUsersByRole(UserRole.SUPER_ADMIN);
+        if (superAdmins.length > 0) {
+          console.log('ℹ️ [userService] Un super administrateur existe déjà dans Firestore.');
+          return {
+            success: true,
+            uid: superAdmins[0].uid
+          };
+        }
+      } catch (fsError) {
+        // Souvent une erreur de permission si non connecté, on continue
+        console.log('ℹ [userService] Impossible de vérifier Firestore (probablement non authentifié). Tentative Auth...');
       }
 
-      // Créer le compte Firebase Auth
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      const user = result.user;
+      // 2. Tenter de créer le compte Firebase Auth
+      try {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        const user = result.user;
 
-      // Mettre à jour le profil
-      await updateProfile(user, { displayName });
+        // Mettre à jour le profil Auth
+        await updateProfile(user, { displayName });
 
-      // Créer le document utilisateur
-      const superAdminData: FirebaseUser = {
-        uid: user.uid,
-        email: user.email!,
-        displayName,
-        role: UserRole.SUPER_ADMIN,
-        isTemporaryPassword: false,
-        createdAt: Timestamp.now()
-      };
+        // Créer le document utilisateur dans Firestore
+        const superAdminData: FirebaseUser = {
+          uid: user.uid,
+          email: user.email!,
+          displayName,
+          role: UserRole.SUPER_ADMIN,
+          isTemporaryPassword: false,
+          createdAt: Timestamp.now()
+        };
 
-      await setDoc(doc(db, 'users', user.uid), superAdminData);
+        await setDoc(doc(db, 'users', user.uid), superAdminData);
+        console.log('✅ [userService] Super Admin créé avec succès.');
 
-      return {
-        success: true,
-        uid: user.uid
-      };
+        return {
+          success: true,
+          uid: user.uid
+        };
+      } catch (authError: any) {
+        if (authError.code === 'auth/email-already-in-use') {
+          console.log('ℹ️ [userService] L\'email est déjà utilisé. Le Super Admin existe probablement déjà.');
+          return {
+            success: true,
+            error: 'Un compte avec cet email existe déjà'
+          };
+        }
+        throw authError;
+      }
     } catch (error: any) {
-      console.error('Erreur lors de l\'initialisation du super admin:', error);
-
-      // Si l'email existe déjà, ce n'est pas une vraie erreur
-      if (error.code === 'auth/email-already-in-use') {
-        return {
-          success: false,
-          error: 'Un compte avec cet email existe déjà'
-        };
-      }
-
+      console.error('❌ [userService] Erreur lors de l\'initialisation du super admin:', error);
       return {
         success: false,
         error: error.message

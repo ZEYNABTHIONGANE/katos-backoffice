@@ -11,7 +11,7 @@ interface VoiceNoteListProps {
     chantierId: string;
     phaseId: string;
     stepId?: string;
-    currentUserId?: string; 
+    currentUserId?: string;
 }
 
 interface UserInfo {
@@ -61,9 +61,9 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
                         if (user.role === UserRole.CLIENT) roleLabel = 'Client';
                         else if (user.role === UserRole.CHEF || user.isChef) roleLabel = 'Chef';
                         else if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) roleLabel = 'Admin';
-                        
-                        newInfo[uid] = { 
-                            name: user.displayName, 
+
+                        newInfo[uid] = {
+                            name: user.displayName,
                             roleLabel: roleLabel
                         };
                     } else {
@@ -104,7 +104,7 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
 
         setIsDeleting(true);
         try {
-            await feedbackService.deleteVoiceNote(itemToDelete.chantierId, itemToDelete.id, itemToDelete.audioUrl || '');
+            await feedbackService.deleteVoiceNote(itemToDelete.chantierId, itemToDelete.id);
             setDeleteModalOpen(false);
             setItemToDelete(null);
         } catch (error) {
@@ -117,16 +117,16 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
 
     const handleSendText = async () => {
         if (!text.trim() || !userData) return;
-        
+
         const messageToSend = text.trim();
         setText('');
-        
+
         try {
             await feedbackService.createTextMessage(
-                chantierId, 
-                phaseId, 
-                userData.uid, 
-                messageToSend, 
+                chantierId,
+                phaseId,
+                userData.uid,
+                messageToSend,
                 stepId
             );
         } catch (error) {
@@ -137,11 +137,11 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
 
     if (feedbacks.length === 0 && !userData) return null; // Logic usually implies auth user is needed to verify perms or send messages. 
     // If not logged in, we probably wouldn't see this page.
-    
+
     return (
         <div className="mt-4 space-y-3">
             <h4 className="text-sm font-semibold text-gray-700">Messages & Notes vocales</h4>
-            
+
             <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                 {feedbacks.map((item) => {
                     const isPlaying = playingId === item.id;
@@ -157,37 +157,34 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
                                         {info.name}
                                     </span>
                                     {info.roleLabel && !isMe && (
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                            info.roleLabel === 'Chef' ? 'bg-purple-100 text-purple-700' :
-                                            info.roleLabel === 'Client' ? 'bg-green-100 text-green-700' :
-                                            'bg-gray-200 text-gray-700'
-                                        }`}>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${info.roleLabel === 'Chef' ? 'bg-purple-100 text-purple-700' :
+                                                info.roleLabel === 'Client' ? 'bg-green-100 text-green-700' :
+                                                    'bg-gray-200 text-gray-700'
+                                            }`}>
                                             {info.roleLabel}
                                         </span>
                                     )}
                                 </div>
 
-                                <div className={`relative p-3 rounded-2xl ${
-                                    isMe 
-                                        ? 'bg-blue-600 text-white rounded-tr-none' 
+                                <div className={`relative p-3 rounded-2xl ${isMe
+                                        ? 'bg-blue-600 text-white rounded-tr-none'
                                         : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                                }`}>
+                                    }`}>
                                     {isText ? (
                                         <p className="text-sm whitespace-pre-wrap">{item.text}</p>
                                     ) : (
                                         <div className="flex items-center space-x-3">
                                             <button
                                                 onClick={() => handlePlay(item.audioUrl, item.id)}
-                                                className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
-                                                    isMe ? 'bg-white text-blue-600 hover:bg-gray-100' : 'bg-blue-600 text-white hover:bg-blue-700'
-                                                }`}
+                                                className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isMe ? 'bg-white text-blue-600 hover:bg-gray-100' : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                    }`}
                                             >
                                                 {isPlaying ? <Pause size={14} /> : <Play size={14} />}
                                             </button>
                                             <div className="flex items-center space-x-2">
                                                 <div className={`h-1 w-16 rounded-full overflow-hidden ${isMe ? 'bg-blue-400' : 'bg-gray-300'}`}>
-                                                    <div 
-                                                        className={`h-full rounded-full ${isMe ? 'bg-white' : 'bg-blue-500'} ${isPlaying ? 'animate-pulse' : ''}`} 
+                                                    <div
+                                                        className={`h-full rounded-full ${isMe ? 'bg-white' : 'bg-blue-500'} ${isPlaying ? 'animate-pulse' : ''}`}
                                                         style={{ width: isPlaying ? '100%' : '0%' }}
                                                     />
                                                 </div>
@@ -196,13 +193,13 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className="text-[10px] text-gray-400">
                                         {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : ''}
                                     </span>
                                     {canDelete && (
-                                        <button 
+                                        <button
                                             onClick={() => handleDeleteClick(item)}
                                             className="text-gray-400 hover:text-red-500 p-0.5"
                                             title="Supprimer"
@@ -235,11 +232,10 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
                 <button
                     onClick={handleSendText}
                     disabled={!text.trim()}
-                    className={`p-2 rounded-full ${
-                        text.trim() 
-                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' 
+                    className={`p-2 rounded-full ${text.trim()
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    } transition-all duration-200`}
+                        } transition-all duration-200`}
                 >
                     <Send size={18} />
                 </button>

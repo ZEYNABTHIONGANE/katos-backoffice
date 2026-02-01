@@ -9,11 +9,10 @@ import {
     orderBy,
     where,
     serverTimestamp,
-    Timestamp,
     arrayUnion
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
+import { cloudinaryService } from './cloudinaryService';
 import type { VoiceNoteFeedback } from '../types/firebase';
 
 const FEEDBACKS_SUBCOLLECTION = 'feedbacks';
@@ -23,13 +22,9 @@ export const feedbackService = {
     /**
      * Uploads a voice note audio file to Firebase Storage
      */
-    uploadAudioFile: async (file: Blob, chantierId: string): Promise<string> => {
+    uploadAudioFile: async (file: Blob): Promise<string> => {
         try {
-            const filename = `voice_notes/${chantierId}/${Date.now()}.m4a`;
-            const storageRef = ref(storage, filename);
-
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
+            const downloadURL = await cloudinaryService.uploadFile(file as any, 'video');
             return downloadURL;
         } catch (error) {
             console.error('Error uploading audio file:', error);
@@ -163,7 +158,7 @@ export const feedbackService = {
     /**
      * Deletes a voice note from Firestore (and optionally storage)
      */
-    deleteVoiceNote: async (chantierId: string, feedbackId: string, audioUrl: string) => {
+    deleteVoiceNote: async (chantierId: string, feedbackId: string) => {
         try {
             // Delete from Firestore
             const feedbackRef = doc(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION, feedbackId);

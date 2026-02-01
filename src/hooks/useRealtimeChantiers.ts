@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { chantierService } from '../services/chantierService';
+import { useAuthStore } from '../store/authStore';
 import type { FirebaseChantier } from '../types/chantier';
 
 export const useRealtimeChantiers = () => {
@@ -7,7 +8,15 @@ export const useRealtimeChantiers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { isAuthenticated } = useAuthStore();
+
   useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('⏳ Hook useRealtimeChantiers: En attente d\'authentification...');
+      setLoading(false);
+      return;
+    }
+
     console.log('🔄 Hook useRealtimeChantiers: Initialisation de l\'écoute temps réel');
     setLoading(true);
     setError(null);
@@ -24,7 +33,7 @@ export const useRealtimeChantiers = () => {
       console.log('🔌 Hook useRealtimeChantiers: Déconnexion');
       unsubscribe();
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return {
     chantiers,
