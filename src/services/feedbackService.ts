@@ -9,10 +9,9 @@ import {
     orderBy,
     where,
     serverTimestamp,
-    Timestamp,
     arrayUnion
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 import type { VoiceNoteFeedback } from '../types/firebase';
 
@@ -122,21 +121,25 @@ export const feedbackService = {
     ) => {
         const feedbacksRef = collection(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION);
 
-        let q = query(
+        const q = query(
             feedbacksRef,
             where('phaseId', '==', phaseId),
             orderBy('createdAt', 'asc')
         );
 
-        if (stepId) {
-            q = query(q, where('stepId', '==', stepId));
-        }
-
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const feedbacks = snapshot.docs.map(doc => ({
+            let feedbacks = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             })) as VoiceNoteFeedback[];
+
+            // Filter locally by stepId to avoid needing a composite index
+            if (stepId) {
+                feedbacks = feedbacks.filter(f => f.stepId === stepId);
+            } else {
+                // If no stepId provided, we only want feedbacks belonging to the phase directly
+                feedbacks = feedbacks.filter(f => !f.stepId);
+            }
 
             onUpdate(feedbacks);
         }, (error) => {
@@ -161,20 +164,14 @@ export const feedbackService = {
     },
 
     /**
-     * Deletes a voice note from Firestore (and optionally storage)
+     * Deletes a feedback document from Firestore
      */
-    deleteVoiceNote: async (chantierId: string, feedbackId: string, audioUrl: string) => {
+    deleteFeedback: async (chantierId: string, feedbackId: string) => {
         try {
-            // Delete from Firestore
             const feedbackRef = doc(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION, feedbackId);
             await deleteDoc(feedbackRef);
-
-            // Try to delete from storage if we can parse the ref, 
-            // but for safety/simplicity we can leave it or try:
-            // const storageRef = ref(storage, audioUrl);
-            // await deleteObject(storageRef).catch(e => console.warn("Storage delete failed", e));
         } catch (error) {
-            console.error('Error deleting voice note:', error);
+            console.error('Error deleting feedback:', error);
             throw error;
         }
     }
