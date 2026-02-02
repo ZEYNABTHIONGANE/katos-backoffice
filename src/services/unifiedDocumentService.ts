@@ -12,8 +12,8 @@ import {
   writeBatch,
   getDoc
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
+import { cloudinaryService } from './cloudinaryService';
 import type { UnifiedDocument, DocumentNotification, DocumentStats, UnifiedDocumentType } from '../types/documents';
 import { chantierService } from './chantierService';
 
@@ -30,14 +30,8 @@ export class UnifiedDocumentService {
     chantierId?: string
   ): Promise<string> {
     try {
-      // 1. Upload du fichier vers Firebase Storage
-      const timestamp = Date.now();
-      const fileName = `${timestamp}_${file.name}`;
-      const filePath = `client-documents/${clientId}/${fileName}`;
-      const storageRef = ref(storage, filePath);
-
-      const uploadResult = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(uploadResult.ref);
+      // 1. Upload du fichier vers Cloudinary
+      const downloadURL = await cloudinaryService.uploadFile(file, (file.type.includes('video') || file.name.match(/\.(mp4|mov|avi)$/i)) ? 'video' : 'image');
 
       // 2. Créer l'entrée document
       const docRef = collection(db, this.documentsCollection);

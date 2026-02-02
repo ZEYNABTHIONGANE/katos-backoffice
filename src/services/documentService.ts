@@ -8,8 +8,8 @@ import {
   onSnapshot,
   orderBy
 } from 'firebase/firestore';
-import { deleteObject, ref } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
+import { storageService } from './storageService';
 import type { ClientDocument } from '../types';
 
 export const documentService = {
@@ -59,10 +59,9 @@ export const documentService = {
       // Supprimer le document de Firestore
       await deleteDoc(doc(db, 'clientDocuments', documentId));
 
-      // Supprimer le fichier de Storage
+      // Supprimer le fichier de Storage (Cloudinary via Service)
       if (documentUrl) {
-        const fileRef = ref(storage, documentUrl);
-        await deleteObject(fileRef);
+        await storageService.deleteImage(documentUrl);
       }
     } catch (error) {
       console.error('Erreur lors de la suppression du document:', error);

@@ -11,6 +11,7 @@ import { UserRole } from '../../types/roles';
 import type { FirebaseUser } from '../../types/firebase';
 import { chantierService } from '../../services/chantierService';
 import { storageService } from '../../services/storageService';
+import { useAuthStore } from '../../store/authStore';
 import { toast } from 'react-toastify';
 
 interface ChantierModalProps {
@@ -28,9 +29,10 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
 }) => {
   const { clients } = useClientStore();
   const { projects } = useProjectStore();
+  const { userData } = useAuthStore();
   const [chefs, setChefs] = useState<FirebaseUser[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -50,10 +52,12 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
   useEffect(() => {
     const loadChefs = async () => {
       try {
+        console.log('🔄 Chargement des chefs disponibles...');
         const availableChefs = await userService.getAvailableChefs();
+        console.log(`✅ ${availableChefs.length} chefs chargés:`, availableChefs);
         setChefs(availableChefs);
       } catch (error) {
-        console.error('Erreur lors du chargement des chefs:', error);
+        console.error('❌ Erreur lors du chargement des chefs:', error);
         toast.error('Erreur lors du chargement des chefs de chantier');
       }
     };
@@ -187,7 +191,7 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
       if (!formData.startDate) newErrors.startDate = 'La date de début est requise';
       if (!formData.plannedEndDate) newErrors.plannedEndDate = 'La date de fin prévue est requise';
     }
-    
+
     if (!formData.name) newErrors.name = 'Le nom du chantier est requis';
     if (!formData.address) newErrors.address = 'L\'adresse du chantier est requise';
     if (!formData.assignedChefId) newErrors.assignedChefId = 'Le chef de chantier est requis';
@@ -222,20 +226,24 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
       }
 
       if (chantier) {
+        console.log('📝 [ChantierModal] Mode édition - Mise à jour du chantier...', chantier.id);
         // Mode édition - Mise à jour du chantier existant
         const updates: any = {
           name: formData.name,
           address: formData.address,
           assignedChefId: formData.assignedChefId,
           coverImage: coverImageUrl || null,
+          updatedAt: new Date()
         };
 
         if (formData.startDate) updates.startDate = new Date(formData.startDate);
         if (formData.plannedEndDate) updates.plannedEndDate = new Date(formData.plannedEndDate);
 
         await chantierService.updateChantier(chantier.id, updates);
+        console.log('✅ [ChantierModal] Chantier modifié avec succès!');
         toast.success('Chantier modifié avec succès!');
       } else {
+        console.log('🆕 [ChantierModal] Mode création - Nouveau chantier...');
         // Mode création - Créer un nouveau chantier
         await chantierService.createChantierFromTemplate(
           formData.clientId,
@@ -248,17 +256,21 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
             plannedEndDate: new Date(formData.plannedEndDate),
             coverImage: coverImageUrl
           },
-          'admin' // TODO: Récupérer l'ID de l'utilisateur connecté
+          userData?.uid || 'admin'
         );
+        console.log('✅ [ChantierModal] Chantier créé avec succès!');
         toast.success('Chantier créé avec succès!');
       }
 
-      handleClose();
+      console.log('🏁 [ChantierModal] Fermeture de la modal...');
+      // IMPORTANT: onSuccess se charge déjà de fermer la modal via handleCloseModal dans le parent
+      // On ne l'appelle qu'une fois pour éviter les re-renders inutiles
       onSuccess();
     } catch (error: any) {
-      console.error('Erreur lors de la sauvegarde du chantier:', error);
+      console.error('❌ [ChantierModal] Erreur lors de la sauvegarde:', error);
       toast.error(error.message || `Erreur lors de la ${chantier ? 'modification' : 'création'} du chantier`);
     } finally {
+      console.log('⏳ [ChantierModal] Fin du chargement.');
       setLoading(false);
     }
   };
@@ -295,15 +307,15 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
             <label className="block text-sm font-semibold text-gray-900">
               Image de couverture
             </label>
-            
+
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-primary-500 transition-colors cursor-pointer relative"
-                 onClick={() => document.getElementById('cover-image-upload')?.click()}>
-              
+              onClick={() => document.getElementById('cover-image-upload')?.click()}>
+
               {previewUrl ? (
                 <div className="relative w-full h-48">
-                  <img 
-                    src={previewUrl} 
-                    alt="Cover preview" 
+                  <img
+                    src={previewUrl}
+                    alt="Cover preview"
                     className="w-full h-full object-cover rounded-md"
                   />
                   <button
@@ -324,14 +336,14 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
                   <div className="flex text-sm text-gray-600 justify-center">
                     <label htmlFor="cover-image-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
                       <span>Télécharger une photo</span>
-                      <input 
-                        id="cover-image-upload" 
-                        name="cover-image-upload" 
-                        type="file" 
-                        className="sr-only" 
+                      <input
+                        id="cover-image-upload"
+                        name="cover-image-upload"
+                        type="file"
+                        className="sr-only"
                         accept="image/*"
                         onChange={handleImageChange}
-                        onClick={(e) => e.stopPropagation()} 
+                        onClick={(e) => e.stopPropagation()}
                       />
                     </label>
                     <p className="pl-1">ou glisser-déposer</p>
@@ -437,6 +449,9 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
                   </option>
                 );
               })}
+              {chefs.length === 0 && (
+                <option value="" disabled>Aucun chef disponible (vérifiez les rôles)</option>
+              )}
             </select>
             {errors.assignedChefId && (
               <p className="text-red-600 text-xs mt-1">{errors.assignedChefId}</p>

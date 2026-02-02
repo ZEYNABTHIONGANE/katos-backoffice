@@ -104,7 +104,11 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
 
         setIsDeleting(true);
         try {
+<<<<<<< HEAD
             await feedbackService.deleteFeedback(itemToDelete.chantierId, itemToDelete.id);
+=======
+            await feedbackService.deleteVoiceNote(itemToDelete.chantierId, itemToDelete.id);
+>>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
             setDeleteModalOpen(false);
             setItemToDelete(null);
         } catch (error) {

@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
+=======
+import { toast } from 'react-toastify';
+>>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -10,7 +14,11 @@ import { useConfirm } from '../hooks/useConfirm';
 import type { Project } from '../types';
 
 export const Projects: React.FC = () => {
+<<<<<<< HEAD
   const { projects, addProject, updateProject, deleteProject } = useProjectStore();
+=======
+  const { projects, addProject, updateProject, deleteProject, error } = useProjectStore();
+>>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
@@ -37,11 +45,33 @@ export const Projects: React.FC = () => {
     );
   };
 
+<<<<<<< HEAD
   const handleSubmit = (projectData: Omit<Project, 'id'>) => {
     if (editingProject) {
       updateProject(editingProject.id, projectData);
     } else {
       addProject(projectData);
+=======
+  const handleSubmit = async (projectData: Omit<Project, 'id'>) => {
+    try {
+      if (editingProject) {
+        const success = await updateProject(editingProject.id, projectData);
+        if (success) {
+          toast.success('Projet mis à jour avec succès');
+        } else {
+          toast.error(error || 'Erreur lors de la mise à jour du projet');
+        }
+      } else {
+        const success = await addProject(projectData);
+        if (success) {
+          toast.success('Projet créé avec succès');
+        } else {
+          toast.error(error || 'Erreur lors de la création du projet');
+        }
+      }
+    } catch (error) {
+      toast.error('Une erreur inattendue est survenue');
+>>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
     }
   };
 
@@ -54,7 +84,11 @@ export const Projects: React.FC = () => {
         </div>
         <Button onClick={handleAddProject} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
+<<<<<<< HEAD
         Nouvelle Villa
+=======
+          Nouvelle Villa
+>>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
         </Button>
       </div>
 

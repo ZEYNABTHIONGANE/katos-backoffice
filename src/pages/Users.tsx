@@ -325,11 +325,18 @@ Mot de passe: ${result.tempPassword}
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('codes')}
+<<<<<<< HEAD
             className={`py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
               activeTab === 'codes'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
+=======
+            className={`py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${activeTab === 'codes'
+              ? 'border-primary-500 text-primary-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+>>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
           >
             <Key className="w-4 h-4 inline mr-2" />
             Codes d'invitation ({invitationCodes.length})
@@ -337,11 +344,18 @@ Mot de passe: ${result.tempPassword}
           <RoleGuard requiredPermission="canManageUsers">
             <button
               onClick={() => setActiveTab('users')}
+<<<<<<< HEAD
             className={`py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
               activeTab === 'users'
                   ? 'border-primary-500 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
+=======
+              className={`py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${activeTab === 'users'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+>>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
             >
               <UsersIcon className="w-4 h-4 inline mr-2" />
               Utilisateurs ({users.length})
@@ -353,6 +367,7 @@ Mot de passe: ${result.tempPassword}
       {/* Contenu des onglets */}
       {activeTab === 'codes' && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+<<<<<<< HEAD
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">
             Codes d'invitation ({invitationCodes.length})
@@ -447,6 +462,102 @@ Mot de passe: ${result.tempPassword}
             </div>
           )}
         </div>
+=======
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              Codes d'invitation ({invitationCodes.length})
+            </h3>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Créé le
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Expire le
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {invitationCodes.map((code) => {
+                  return (
+                    <tr key={code.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
+                          <div className="text-sm font-mono font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                            {code.code}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeColor(code.status)}`}>
+                          {getStatusText(code.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {code.createdAt.toDate().toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {code.expiresAt.toDate().toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          {code.status === 'active' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyCodeToClipboard(code.code)}
+                              icon={<Copy className="w-4 h-4" />}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              Copier
+                            </Button>
+                          )}
+                          <RoleGuard requiredPermission="canDeleteUsers">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteCode(code)}
+                              icon={<Trash2 className="w-4 h-4" />}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              Supprimer
+                            </Button>
+                          </RoleGuard>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {invitationCodes.length === 0 && (
+              <div className="text-center py-12">
+                <Key className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun code d'invitation</h3>
+                <p className="text-gray-500 mb-4">Générez votre premier code d'invitation</p>
+                <RoleGuard requiredPermission="canManageUsers">
+                  <Button onClick={handleGenerateCode} loading={creatingCode} icon={<Plus className="w-4 h-4" />}>
+                    Générer un code
+                  </Button>
+                </RoleGuard>
+              </div>
+            )}
+          </div>
+>>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
         </div>
       )}
 
