@@ -207,23 +207,21 @@ export const ChantierDetail: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium text-gray-900">{phase.name}</h4>
                     {katosPhase.category && (
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        katosPhase.category === 'gros_oeuvre' ? 'bg-orange-100 text-orange-700' :
-                        katosPhase.category === 'second_oeuvre' ? 'bg-purple-100 text-purple-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
+                      <span className={`px-2 py-1 text-xs rounded ${katosPhase.category === 'gros_oeuvre' ? 'bg-orange-100 text-orange-700' :
+                          katosPhase.category === 'second_oeuvre' ? 'bg-purple-100 text-purple-700' :
+                            'bg-gray-100 text-gray-700'
+                        }`}>
                         {katosPhase.category === 'gros_oeuvre' ? 'Gros œuvre' :
-                         katosPhase.category === 'second_oeuvre' ? 'Second œuvre' : 'Principal'}
+                          katosPhase.category === 'second_oeuvre' ? 'Second œuvre' : 'Principal'}
                       </span>
                     )}
                   </div>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    phase.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    phase.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
+                  <span className={`px-2 py-1 text-xs rounded-full ${phase.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      phase.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-600'
+                    }`}>
                     {phase.status === 'completed' ? 'Terminée' :
-                     phase.status === 'in-progress' ? 'En cours' : 'En attente'}
+                      phase.status === 'in-progress' ? 'En cours' : 'En attente'}
                   </span>
                 </div>
                 {phase.description && (
@@ -253,33 +251,31 @@ export const ChantierDetail: React.FC = () => {
                         <div key={step.id} className="py-2 border-b border-gray-100 last:border-0">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                step.status === 'completed' ? 'bg-teal-500' :
-                                step.status === 'in-progress' ? 'bg-indigo-500' :
-                                'bg-slate-300'
-                              }`}></div>
+                              <div className={`w-2 h-2 rounded-full ${step.status === 'completed' ? 'bg-teal-500' :
+                                  step.status === 'in-progress' ? 'bg-indigo-500' :
+                                    'bg-slate-300'
+                                }`}></div>
                               <span className="text-sm text-gray-700">{step.name}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-16 bg-gray-200 rounded-full h-1.5">
                                 <div
-                                  className={`h-1.5 rounded-full ${
-                                    step.progress === 100 ? 'bg-teal-500' :
-                                    step.progress >= 50 ? 'bg-indigo-500' :
-                                    step.progress > 0 ? 'bg-indigo-400' :
-                                    'bg-slate-300'
-                                  }`}
+                                  className={`h-1.5 rounded-full ${step.progress === 100 ? 'bg-teal-500' :
+                                      step.progress >= 50 ? 'bg-indigo-500' :
+                                        step.progress > 0 ? 'bg-indigo-400' :
+                                          'bg-slate-300'
+                                    }`}
                                   style={{ width: `${step.progress}%` }}
                                 ></div>
                               </div>
                               <span className="text-xs text-gray-500 w-8">{step.progress}%</span>
                             </div>
                           </div>
-                          
-                          <VoiceNoteList 
-                            chantierId={chantier.id || ''} 
-                            phaseId={phase.id} 
-                            stepId={step.id} 
+
+                          <VoiceNoteList
+                            chantierId={chantier.id || ''}
+                            phaseId={phase.id}
+                            stepId={step.id}
                           />
                         </div>
                       ))}
@@ -298,13 +294,17 @@ export const ChantierDetail: React.FC = () => {
                     {phase.updatedBy && ` par ${getUserName(phase.updatedBy)}`}
                   </div>
                 )}
-                
-                {!hasSteps && (
-                    <VoiceNoteList 
-                        chantierId={chantier.id || ''} 
-                        phaseId={phase.id} 
-                    />
-                )}
+
+                {/* Discussion de la phase */}
+                <div className="mt-6 border-t pt-4">
+                  <h5 className="text-sm font-semibold text-gray-700 mb-3">
+                    {hasSteps ? "Discussion générale de la phase" : "Messages et notes vocales"}
+                  </h5>
+                  <VoiceNoteList
+                    chantierId={chantier.id || ''}
+                    phaseId={phase.id}
+                  />
+                </div>
               </div>
             );
           })}

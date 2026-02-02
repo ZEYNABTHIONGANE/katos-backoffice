@@ -11,8 +11,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp, deleteDoc, collection, getDocs, updateDoc, query, orderBy, where } from 'firebase/firestore';
-import { auth, db, app } from '../config/firebase';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { auth, db } from '../config/firebase';
 import type { FirebaseUser } from '../types/firebase';
 import { UserRole } from '../types/roles';
 
