@@ -101,43 +101,67 @@ export const ChantierDetail: React.FC = () => {
   };
 
   const renderGalleryItem = (photo: ProgressPhoto) => {
-    const isVideo = photo.type === 'video' || photo.url.includes('.mp4') || photo.url.includes('.mov');
+    // Robust video detection: check type OR file extension (case insensitive)
+    const isVideo = photo.type === 'video' ||
+      /\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(photo.url);
 
     // Tentative de récupération d'une miniature pour la vidéo
     let thumbnailUrl = photo.url;
+    let useVideoTag = false;
+
     if (isVideo) {
       if (photo.thumbnailUrl) {
         thumbnailUrl = photo.thumbnailUrl;
       } else if (photo.url.includes('cloudinary.com')) {
         // Astuce Cloudinary: changer l'extension pour avoir une image jpg
         thumbnailUrl = photo.url.replace(/\.[^/.]+$/, ".jpg");
+      } else {
+        // Fallback: use video tag to display the first frame
+        useVideoTag = true;
       }
     }
 
     return (
       <div key={photo.id} className="relative group cursor-pointer" onClick={() => window.open(photo.url, '_blank')}>
-        <img
-          src={thumbnailUrl}
-          alt={photo.description || 'Progrès du chantier'}
-          className="w-full h-24 object-cover rounded-lg group-hover:opacity-90 transition-opacity bg-gray-100"
-          onError={(e) => {
-            // Fallback si la miniature générée échoue ou si l'image est cassée
-            (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Indisponible';
-          }}
-        />
+        {isVideo && useVideoTag ? (
+          <video
+            src={photo.url}
+            className="w-full h-24 object-cover rounded-lg bg-gray-900"
+            preload="metadata"
+            muted
+            playsInline
+            onMouseOver={(e) => (e.target as HTMLVideoElement).play()}
+            onMouseOut={(e) => {
+              const video = e.target as HTMLVideoElement;
+              video.pause();
+              video.currentTime = 0;
+            }}
+          />
+        ) : (
+          <img
+            src={thumbnailUrl}
+            alt={photo.description || 'Progrès du chantier'}
+            className="w-full h-24 object-cover rounded-lg group-hover:opacity-90 transition-opacity bg-gray-100"
+            onError={(e) => {
+              // Fallback si la miniature générée échoue ou si l'image est cassée
+              (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Indisponible';
+            }}
+          />
+        )}
+
         {isVideo && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-black bg-opacity-50 rounded-full p-2">
               <Play className="w-6 h-6 text-white fill-current" />
             </div>
           </div>
         )}
         {photo.description && (
-          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-2 rounded-b-lg truncate">
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-2 rounded-b-lg truncate pointer-events-none">
             {photo.description}
           </div>
         )}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg" />
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg pointer-events-none" />
       </div>
     );
   };
