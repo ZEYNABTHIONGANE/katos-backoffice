@@ -11,13 +11,8 @@ import {
     serverTimestamp,
     arrayUnion
 } from 'firebase/firestore';
-<<<<<<< HEAD
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
-=======
 import { db } from '../config/firebase';
 import { cloudinaryService } from './cloudinaryService';
->>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
 import type { VoiceNoteFeedback } from '../types/firebase';
 
 const FEEDBACKS_SUBCOLLECTION = 'feedbacks';
@@ -25,21 +20,11 @@ const CHANTIERS_COLLECTION = 'chantiers';
 
 export const feedbackService = {
     /**
-     * Uploads a voice note audio file to Firebase Storage
+     * Uploads a voice note audio file to Cloudinary (previously Firebase)
      */
-<<<<<<< HEAD
-    uploadAudioFile: async (file: Blob, chantierId: string): Promise<string> => {
-        try {
-            const filename = `voice_notes/${chantierId}/${Date.now()}.m4a`;
-            const storageRef = ref(storage, filename);
-
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-=======
     uploadAudioFile: async (file: Blob): Promise<string> => {
         try {
             const downloadURL = await cloudinaryService.uploadFile(file as any, 'video');
->>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
             return downloadURL;
         } catch (error) {
             console.error('Error uploading audio file:', error);
@@ -175,31 +160,14 @@ export const feedbackService = {
     },
 
     /**
-<<<<<<< HEAD
-     * Deletes a feedback document from Firestore
-     */
-    deleteFeedback: async (chantierId: string, feedbackId: string) => {
-        try {
-            const feedbackRef = doc(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION, feedbackId);
-            await deleteDoc(feedbackRef);
-        } catch (error) {
-            console.error('Error deleting feedback:', error);
-=======
-     * Deletes a voice note from Firestore (and optionally storage)
+     * Deletes a voice note from Firestore
      */
     deleteVoiceNote: async (chantierId: string, feedbackId: string) => {
         try {
-            // Delete from Firestore
             const feedbackRef = doc(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION, feedbackId);
             await deleteDoc(feedbackRef);
-
-            // Try to delete from storage if we can parse the ref, 
-            // but for safety/simplicity we can leave it or try:
-            // const storageRef = ref(storage, audioUrl);
-            // await deleteObject(storageRef).catch(e => console.warn("Storage delete failed", e));
         } catch (error) {
             console.error('Error deleting voice note:', error);
->>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
             throw error;
         }
     }

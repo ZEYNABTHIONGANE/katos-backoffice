@@ -104,11 +104,7 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
 
         setIsDeleting(true);
         try {
-<<<<<<< HEAD
-            await feedbackService.deleteFeedback(itemToDelete.chantierId, itemToDelete.id);
-=======
             await feedbackService.deleteVoiceNote(itemToDelete.chantierId, itemToDelete.id);
->>>>>>> e232376998e67a699b3bf96313d2dcc4717b2f88
             setDeleteModalOpen(false);
             setItemToDelete(null);
         } catch (error) {
@@ -162,8 +158,8 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
                                     </span>
                                     {info.roleLabel && !isMe && (
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${info.roleLabel === 'Chef' ? 'bg-purple-100 text-purple-700' :
-                                                info.roleLabel === 'Client' ? 'bg-green-100 text-green-700' :
-                                                    'bg-gray-200 text-gray-700'
+                                            info.roleLabel === 'Client' ? 'bg-green-100 text-green-700' :
+                                                'bg-gray-200 text-gray-700'
                                             }`}>
                                             {info.roleLabel}
                                         </span>
@@ -171,8 +167,8 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
                                 </div>
 
                                 <div className={`relative p-3 rounded-2xl ${isMe
-                                        ? 'bg-blue-600 text-white rounded-tr-none'
-                                        : 'bg-gray-100 text-gray-800 rounded-tl-none'
+                                    ? 'bg-blue-600 text-white rounded-tr-none'
+                                    : 'bg-gray-100 text-gray-800 rounded-tl-none'
                                     }`}>
                                     {isText ? (
                                         <p className="text-sm whitespace-pre-wrap">{item.text}</p>
@@ -237,8 +233,8 @@ export const VoiceNoteList: React.FC<VoiceNoteListProps> = ({ chantierId, phaseI
                     onClick={handleSendText}
                     disabled={!text.trim()}
                     className={`p-2 rounded-full ${text.trim()
-                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         } transition-all duration-200`}
                 >
                     <Send size={18} />
