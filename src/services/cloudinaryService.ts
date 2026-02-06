@@ -6,7 +6,7 @@ export class CloudinaryService {
     /**
      * Upload a file to Cloudinary
      */
-    async uploadFile(file: File | string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<string> {
+    async uploadFile(file: File | string, resourceType: 'image' | 'video' | 'raw' | 'auto' = 'image'): Promise<string> {
         if (!this.CLOUD_NAME || !this.UPLOAD_PRESET) {
             throw new Error('Cloudinary configuration missing. Please check your .env file.');
         }

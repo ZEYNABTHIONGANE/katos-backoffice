@@ -31,7 +31,7 @@ export class UnifiedDocumentService {
   ): Promise<string> {
     try {
       // 1. Upload du fichier vers Cloudinary
-      const downloadURL = await cloudinaryService.uploadFile(file, (file.type.includes('video') || file.name.match(/\.(mp4|mov|avi)$/i)) ? 'video' : 'image');
+      const downloadURL = await cloudinaryService.uploadFile(file, (file.type.includes('video') || file.name.match(/\.(mp4|mov|avi)$/i)) ? 'video' : 'auto');
 
       // 2. Créer l'entrée document
       const docRef = collection(db, this.documentsCollection);
