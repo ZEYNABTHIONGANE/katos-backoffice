@@ -61,6 +61,23 @@ export const ChantierDetail: React.FC = () => {
 
   const { getUserName, loading: userNamesLoading } = useUserNames(userIds);
 
+  // Refs pour le scroll
+  const progressRef = React.useRef<HTMLDivElement>(null);
+  const phasesRef = React.useRef<HTMLDivElement>(null);
+  const teamRef = React.useRef<HTMLDivElement>(null);
+  const galleryRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollToSection = (section: 'progress' | 'phases' | 'team' | 'gallery') => {
+    const refs = {
+      progress: progressRef,
+      phases: phasesRef,
+      team: teamRef,
+      gallery: galleryRef
+    };
+
+    refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const getStatusColor = (status: ChantierStatus) => {
     switch (status) {
       case 'En cours':
@@ -136,9 +153,12 @@ export const ChantierDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Statistiques principales */}
+      {/* Statistiques principales - Interactive */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
+        <Card
+          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => scrollToSection('progress')}
+        >
           <div className="flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-blue-600" />
             <div>
@@ -147,7 +167,10 @@ export const ChantierDetail: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card
+          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => scrollToSection('phases')}
+        >
           <div className="flex items-center gap-3">
             <Clock className="w-8 h-8 text-yellow-600" />
             <div>
@@ -156,7 +179,10 @@ export const ChantierDetail: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card
+          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => scrollToSection('team')}
+        >
           <div className="flex items-center gap-3">
             <Users className="w-8 h-8 text-green-600" />
             <div>
@@ -165,7 +191,10 @@ export const ChantierDetail: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card
+          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => scrollToSection('gallery')}
+        >
           <div className="flex items-center gap-3">
             <Camera className="w-8 h-8 text-purple-600" />
             <div>
@@ -177,186 +206,202 @@ export const ChantierDetail: React.FC = () => {
       </div>
 
       {/* Progression générale */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression générale</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Progression</span>
-            <span className="font-medium">{globalProgress}%</span>
+      <div ref={progressRef}>
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression générale</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Progression</span>
+              <span className="font-medium">{globalProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all ${getProgressColor(globalProgress)}`}
+                style={{ width: `${globalProgress}%` }}
+              ></div>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className={`h-3 rounded-full transition-all ${getProgressColor(globalProgress)}`}
-              style={{ width: `${globalProgress}%` }}
-            ></div>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
 
       {/* Phases */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Phases du projet</h3>
-        <div className="space-y-4">
-          {chantier.phases.map((phase) => {
-            const katosPhase = phase as KatosChantierPhase;
-            const hasSteps = katosPhase.steps && katosPhase.steps.length > 0;
+      <div ref={phasesRef}>
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Phases du projet</h3>
+          <div className="space-y-4">
+            {chantier.phases.map((phase) => {
+              const katosPhase = phase as KatosChantierPhase;
+              const hasSteps = katosPhase.steps && katosPhase.steps.length > 0;
 
-            return (
-              <div key={phase.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-gray-900">{phase.name}</h4>
-                    {katosPhase.category && (
-                      <span className={`px-2 py-1 text-xs rounded ${katosPhase.category === 'gros_oeuvre' ? 'bg-orange-100 text-orange-700' :
-                        katosPhase.category === 'second_oeuvre' ? 'bg-purple-100 text-purple-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                        {katosPhase.category === 'gros_oeuvre' ? 'Gros œuvre' :
-                          katosPhase.category === 'second_oeuvre' ? 'Second œuvre' : 'Principal'}
-                      </span>
-                    )}
+              return (
+                <div key={phase.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-gray-900">{phase.name}</h4>
+                      {katosPhase.category && (
+                        <span className={`px-2 py-1 text-xs rounded ${katosPhase.category === 'gros_oeuvre' ? 'bg-orange-100 text-orange-700' :
+                          katosPhase.category === 'second_oeuvre' ? 'bg-purple-100 text-purple-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                          {katosPhase.category === 'gros_oeuvre' ? 'Gros œuvre' :
+                            katosPhase.category === 'second_oeuvre' ? 'Second œuvre' : 'Principal'}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full ${phase.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      phase.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                      {phase.status === 'completed' ? 'Terminée' :
+                        phase.status === 'in-progress' ? 'En cours' : 'En attente'}
+                    </span>
                   </div>
-                  <span className={`px-2 py-1 text-xs rounded-full ${phase.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    phase.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
-                    {phase.status === 'completed' ? 'Terminée' :
-                      phase.status === 'in-progress' ? 'En cours' : 'En attente'}
-                  </span>
-                </div>
-                {phase.description && (
-                  <p className="text-sm text-gray-600 mb-3">{phase.description}</p>
-                )}
+                  {phase.description && (
+                    <p className="text-sm text-gray-600 mb-3">{phase.description}</p>
+                  )}
 
-                {/* Progress global de la phase */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Progression globale</span>
-                    <span className="font-medium">{phase.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${getProgressColor(phase.progress)}`}
-                      style={{ width: `${phase.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Sous-étapes si elles existent */}
-                {hasSteps && (
-                  <div className="mt-4 space-y-2">
-                    <h5 className="text-sm font-medium text-gray-700">Détail des étapes:</h5>
-                    <div className="space-y-2 ml-4">
-                      {katosPhase.steps!.map((step: PhaseStep) => (
-                        <div key={step.id} className="py-2 border-b border-gray-100 last:border-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${step.status === 'completed' ? 'bg-teal-500' :
-                                step.status === 'in-progress' ? 'bg-indigo-500' :
-                                  'bg-slate-300'
-                                }`}></div>
-                              <span className="text-sm text-gray-700">{step.name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                                <div
-                                  className={`h-1.5 rounded-full ${step.progress === 100 ? 'bg-teal-500' :
-                                    step.progress >= 50 ? 'bg-indigo-500' :
-                                      step.progress > 0 ? 'bg-indigo-400' :
-                                        'bg-slate-300'
-                                    }`}
-                                  style={{ width: `${step.progress}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-xs text-gray-500 w-8">{step.progress}%</span>
-                            </div>
-                          </div>
-                          <VoiceNoteList
-                            chantierId={chantier.id || ''}
-                            phaseId={phase.id}
-                            stepId={step.id}
-                          />
-                        </div>
-                      ))}
+                  {/* Progress global de la phase */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Progression globale</span>
+                      <span className="font-medium">{phase.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${getProgressColor(phase.progress)}`}
+                        style={{ width: `${phase.progress}%` }}
+                      ></div>
                     </div>
                   </div>
-                )}
 
-                {phase.notes && !phase.notes.includes('Progression mise à jour via l\'application mobile') && (
-                  <div className="mt-3 text-sm text-gray-600">
-                    <strong>Notes:</strong> {phase.notes}
+                  {/* Sous-étapes si elles existent */}
+                  {hasSteps && (
+                    <div className="mt-4 space-y-2">
+                      <h5 className="text-sm font-medium text-gray-700">Détail des étapes:</h5>
+                      <div className="space-y-2 ml-4">
+                        {katosPhase.steps!.map((step: PhaseStep) => (
+                          <div key={step.id} className="py-2 border-b border-gray-100 last:border-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${step.status === 'completed' ? 'bg-teal-500' :
+                                  step.status === 'in-progress' ? 'bg-indigo-500' :
+                                    'bg-slate-300'
+                                  }`}></div>
+                                <span className="text-sm text-gray-700">{step.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                  <div
+                                    className={`h-1.5 rounded-full ${step.progress === 100 ? 'bg-teal-500' :
+                                      step.progress >= 50 ? 'bg-indigo-500' :
+                                        step.progress > 0 ? 'bg-indigo-400' :
+                                          'bg-slate-300'
+                                      }`}
+                                    style={{ width: `${step.progress}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-xs text-gray-500 w-8">{step.progress}%</span>
+                              </div>
+                            </div>
+                            <VoiceNoteList
+                              chantierId={chantier.id || ''}
+                              phaseId={phase.id}
+                              stepId={step.id}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {phase.notes && !phase.notes.includes('Progression mise à jour via l\'application mobile') && (
+                    <div className="mt-3 text-sm text-gray-600">
+                      <strong>Notes:</strong> {phase.notes}
+                    </div>
+                  )}
+                  {phase.lastUpdated && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      Dernière mise à jour: {phase.lastUpdated.toDate().toLocaleString('fr-FR')}
+                      {phase.updatedBy && ` par ${getUserName(phase.updatedBy)}`}
+                    </div>
+                  )}
+                  {/* Discussion de la phase */}
+                  <div className="mt-6 border-t pt-4">
+                    <h5 className="text-sm font-semibold text-gray-700 mb-3">
+                      {hasSteps ? "Discussion générale de la phase" : "Messages et notes vocales"}
+                    </h5>
+                    <VoiceNoteList
+                      chantierId={chantier.id || ''}
+                      phaseId={phase.id}
+                    />
                   </div>
-                )}
-                {phase.lastUpdated && (
-                  <div className="mt-2 text-xs text-gray-500">
-                    Dernière mise à jour: {phase.lastUpdated.toDate().toLocaleString('fr-FR')}
-                    {phase.updatedBy && ` par ${getUserName(phase.updatedBy)}`}
-                  </div>
-                )}
-                {/* Discussion de la phase */}
-                <div className="mt-6 border-t pt-4">
-                  <h5 className="text-sm font-semibold text-gray-700 mb-3">
-                    {hasSteps ? "Discussion générale de la phase" : "Messages et notes vocales"}
-                  </h5>
-                  <VoiceNoteList
-                    chantierId={chantier.id || ''}
-                    phaseId={phase.id}
-                  />
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
 
       {/* Équipe */}
       {chantier.team.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Équipe</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {chantier.team.map((member) => (
-              <div key={member.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                <User className="w-8 h-8 text-gray-400" />
-                <div>
-                  <div className="font-medium text-gray-900">{member.name}</div>
-                  <div className="text-sm text-gray-600">{member.role}</div>
-                  {member.phoneNumber && (
-                    <div className="text-xs text-gray-500">{member.phoneNumber}</div>
-                  )}
+        <div ref={teamRef}>
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Équipe</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {chantier.team.map((member) => (
+                <div key={member.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                  <User className="w-8 h-8 text-gray-400" />
+                  <div>
+                    <div className="font-medium text-gray-900">{member.name}</div>
+                    <div className="text-sm text-gray-600">{member.role}</div>
+                    {member.phoneNumber && (
+                      <div className="text-xs text-gray-500">{member.phoneNumber}</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Galerie photos */}
-      {/* {chantier.gallery.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Galerie photos</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {chantier.gallery.slice(0, 8).map((photo) => (
-              <div key={photo.id} className="relative">
-                <img
-                  src={photo.url}
-                  alt={photo.description || 'Photo du chantier'}
-                  className="w-full h-24 object-cover rounded-lg"
-                />
-                {photo.description && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 rounded-b-lg">
-                    {photo.description}
+      <div ref={galleryRef}>
+        {chantier.gallery.length > 0 ? (
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Galerie photos</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {chantier.gallery.slice(0, 8).map((photo) => (
+                <div key={photo.id} className="relative group cursor-pointer" onClick={() => window.open(photo.url, '_blank')}>
+                  <img
+                    src={photo.url}
+                    alt={photo.description || 'Photo du chantier'}
+                    className="w-full h-24 object-cover rounded-lg group-hover:opacity-90 transition-opacity"
+                  />
+                  {photo.description && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 rounded-b-lg truncate">
+                      {photo.description}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                    {/* Hover overlay hint could go here */}
                   </div>
-                )}
-              </div>
-            ))}
-            {chantier.gallery.length > 8 && (
-              <div className="flex items-center justify-center bg-gray-100 rounded-lg h-24">
-                <span className="text-sm text-gray-600">+{chantier.gallery.length - 8} photos</span>
-              </div>
-            )}
-          </div>
-        </Card>
-      )} */}
+                </div>
+              ))}
+              {chantier.gallery.length > 8 && (
+                <div className="flex items-center justify-center bg-gray-100 rounded-lg h-24">
+                  <span className="text-sm text-gray-600">+{chantier.gallery.length - 8} photos</span>
+                </div>
+              )}
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Galerie photos</h3>
+            <p className="text-gray-500 text-sm">Aucune photo pour le moment.</p>
+          </Card>
+        )}
+      </div>
 
       {/* Dernières mises à jour */}
       {chantier.updates.length > 0 && (
