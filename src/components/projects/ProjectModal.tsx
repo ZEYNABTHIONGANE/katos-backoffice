@@ -126,6 +126,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                 <option value="F5">F5</option>
                 <option value="F6">F6</option>
                 <option value="F7+">F7+</option>
+                <option value="Personnalisé">Personnalisé</option>
               </select>
               {errors.type && (
                 <p className="text-red-600 text-xs mt-1">{errors.type}</p>
