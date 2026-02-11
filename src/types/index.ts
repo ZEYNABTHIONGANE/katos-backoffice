@@ -36,6 +36,10 @@ export interface Project {
   // Facturation
   price: number; // Prix du projet en FCFA
   currency: string; // 'FCFA'
+  // Caractéristiques
+  surface?: number;
+  bedrooms?: number;
+  bathrooms?: number;
 }
 
 export interface Material {

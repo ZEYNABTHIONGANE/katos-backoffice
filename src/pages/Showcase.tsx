@@ -101,14 +101,29 @@ export const Showcase: React.FC = () => {
                     </div>
 
                     <div className="space-y-4">
-                        <Input
-                            label="Titre Principal"
-                            value={content.heroProject.title}
-                            onChange={(e) => setContent({
-                                ...content,
-                                heroProject: { ...content.heroProject, title: e.target.value }
-                            })}
-                        />
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700">Projet Phare (Titre)</label>
+                            <select
+                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 bg-white"
+                                value={content.heroProject.title}
+                                onChange={(e) => {
+                                    setContent({
+                                        ...content,
+                                        heroProject: {
+                                            ...content.heroProject,
+                                            title: e.target.value,
+                                            // Optional: auto-fill description if empty? 
+                                            // For now just keep it as is but use the select
+                                        }
+                                    });
+                                }}
+                            >
+                                <option value="">Sélectionnez un projet</option>
+                                {projects.map(p => (
+                                    <option key={p.id} value={p.name}>{p.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         <Input
                             label="Sous-titre"
                             value={content.heroProject.subtitle}
