@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingBag, Settings, LogOut, Building2, UserCog, HardHat, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingBag, Settings, LogOut, Building2, UserCog, HardHat, FileText, UserPlus, Layout } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useLayout } from '../../hooks/useLayout';
 import { cn } from '../../utils/cn';
@@ -9,11 +9,13 @@ import logo from '../../assets/logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Prospects', href: '/prospects', icon: UserPlus },
   { name: 'Clients', href: '/clients', icon: Users },
   { name: 'Villas', href: '/projects', icon: Building2 },
   { name: 'Projets', href: '/chantiers', icon: HardHat },
   { name: 'Boutique', href: '/boutique', icon: ShoppingBag },
   { name: 'Documents', href: '/documents', icon: FileText },
+  { name: 'Catalogue Mobile', href: '/showcase', icon: Layout },
   { name: 'Administrateurs', href: '/users', icon: UserCog, requiresPermission: 'canManageUsers' as const },
   { name: 'Paramètres', href: '/settings', icon: Settings },
 ];

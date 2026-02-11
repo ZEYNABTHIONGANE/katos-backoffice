@@ -1,0 +1,243 @@
+
+import React, { useState, useEffect } from 'react';
+import { Mail, Phone, Trash2, CheckCircle, XCircle, Clock, Filter, UserPlus, Users } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { prospectService } from '../services/prospectService';
+import type { FirebaseProspect } from '../services/prospectService';
+import { clientService } from '../services/clientService';
+import { clientAccountService } from '../services/clientAccountService';
+import { useConfirm } from '../hooks/useConfirm';
+
+export const Prospects: React.FC = () => {
+    const [prospects, setProspects] = useState<FirebaseProspect[]>([]);
+    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'validated' | 'rejected'>('all');
+    const [loading, setLoading] = useState(true);
+    const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
+
+    useEffect(() => {
+        const unsubscribe = prospectService.subscribeToProspects((data) => {
+            setProspects(data);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleDelete = (prospect: FirebaseProspect) => {
+        confirm(
+            async () => {
+                try {
+                    await prospectService.deleteProspect(prospect.id);
+                    toast.success('Prospect supprimé avec succès');
+                } catch (error) {
+                    toast.error('Erreur lors de la suppression');
+                }
+            },
+            {
+                title: 'Supprimer le prospect',
+                message: `Êtes-vous sûr de vouloir supprimer "${prospect.firstName} ${prospect.lastName}" ?`,
+                confirmText: 'Supprimer',
+                type: 'danger'
+            }
+        );
+    };
+
+    const handleValidate = (prospect: FirebaseProspect) => {
+        confirm(
+            async () => {
+                try {
+                    // 1. Create client from prospect data
+                    const clientId = await clientService.addClient({
+                        nom: prospect.lastName,
+                        prenom: prospect.firstName,
+                        email: prospect.email,
+                        telephone: prospect.phone,
+                        adresse: '',
+                        localisationSite: '',
+                        projetAdhere: prospect.project || 'Non spécifié',
+                        status: 'En attente',
+                        isActive: true,
+                        invitationStatus: 'pending',
+                        typePaiement: 'echeancier'
+                    });
+
+                    // 2. Create client account (Auth + Firestore User)
+                    const accountResult = await clientAccountService.createClientAccount(
+                        prospect.email,
+                        `${prospect.firstName} ${prospect.lastName}`,
+                        clientId
+                    );
+
+                    // 3. Update client document with account info
+                    if (accountResult.success) {
+                        await clientService.updateClient(clientId, {
+                            userId: accountResult.uid,
+                            username: accountResult.username,
+                            tempPassword: accountResult.tempPassword,
+                            invitationStatus: 'accepted' // Automatically accepted since account is created
+                        });
+                    }
+
+                    // 4. Update prospect status
+                    await prospectService.updateProspectStatus(prospect.id, 'validated');
+
+                    if (accountResult.success) {
+                        toast.success(
+                            <div>
+                                <p className="font-bold text-green-700 mb-1">Prospect validé et compte créé !</p>
+                                <p className="text-sm text-gray-700">Identifiant : <span className="font-mono font-bold">{accountResult.username}</span></p>
+                                <p className="text-sm text-gray-700">Mot de passe : <span className="font-mono font-bold">{accountResult.tempPassword}</span></p>
+                            </div>,
+                            { autoClose: false }
+                        );
+                    } else {
+                        toast.success('Prospect validé (profil créé), mais erreur lors de la création du compte auto : ' + accountResult.error);
+                    }
+                } catch (error) {
+                    toast.error('Erreur lors de la validation');
+                }
+            },
+            {
+                title: 'Valider le prospect',
+                message: `Voulez-vous valider "${prospect.firstName} ${prospect.lastName}" et le convertir en client ?`,
+                confirmText: 'Valider',
+                type: 'info'
+            }
+        );
+    };
+
+    const filteredProspects = prospects.filter(p => {
+        if (statusFilter === 'all') return true;
+        return p.status === statusFilter;
+    });
+
+    const getStatusBadge = (status: FirebaseProspect['status']) => {
+        switch (status) {
+            case 'pending':
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" /> En attente</span>;
+            case 'validated':
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" /> Validé</span>;
+            case 'rejected':
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" /> Refusé</span>;
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Prospects</h1>
+                    <p className="text-gray-600 mt-1">Gérez les demandes d'adhésion depuis l'application mobile</p>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="relative">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value as any)}
+                            className="appearance-none bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                        >
+                            <option value="all">Tous les prospects</option>
+                            <option value="pending">En attente</option>
+                            <option value="validated">Validés</option>
+                            <option value="rejected">Refusés</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <Filter className="h-4 w-4" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <Card className="p-0">
+                {loading ? (
+                    <div className="p-8 text-center text-gray-500">Chargement des prospects...</div>
+                ) : filteredProspects.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prospect</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projet souhaité</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredProspects.map((prospect) => (
+                                    <tr key={prospect.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4">
+                                            <div className="font-medium text-gray-900">{prospect.firstName} {prospect.lastName}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-900 flex items-center mb-1">
+                                                <Mail className="w-3 h-3 mr-2 text-gray-400" /> {prospect.email}
+                                            </div>
+                                            <div className="text-sm text-gray-500 flex items-center">
+                                                <Phone className="w-3 h-3 mr-2 text-gray-400" /> {prospect.phone}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-900">{prospect.project || '-'}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                            {prospect.createdAt?.toDate ? prospect.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {getStatusBadge(prospect.status)}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex space-x-2">
+                                                {prospect.status === 'pending' && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleValidate(prospect)}
+                                                        className="bg-green-50 text-green-600 hover:bg-green-100 border-green-200"
+                                                    >
+                                                        <UserPlus className="w-4 h-4 mr-1" /> Valider
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleDelete(prospect)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="text-center py-12 px-4">
+                        <Users className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900">Aucun prospect</h3>
+                        <p className="text-gray-500">Les demandes de l'application mobile apparaîtront ici.</p>
+                    </div>
+                )}
+            </Card>
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={handleClose}
+                onConfirm={handleConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                confirmText={confirmState.confirmText}
+                cancelText={confirmState.cancelText}
+                type={confirmState.type}
+                loading={confirmState.loading}
+            />
+        </div>
+    );
+};

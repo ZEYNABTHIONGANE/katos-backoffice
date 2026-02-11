@@ -14,6 +14,8 @@ import { ChantierDetail } from './pages/ChantierDetail';
 import { Boutique } from './pages/Boutique';
 import { Documents } from './pages/Documents';
 import { Users } from './pages/Users';
+import { Prospects } from './pages/Prospects';
+import { Showcase } from './pages/Showcase';
 import { Settings } from './pages/Settings';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -36,6 +38,7 @@ function App() {
               >
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
+                <Route path="prospects" element={<Prospects />} />
                 <Route path="clients" element={<Clients />} />
                 <Route path="projects" element={<Projects />} />
                 <Route path="chantiers" element={<Chantiers />} />
@@ -43,6 +46,7 @@ function App() {
                 <Route path="boutique" element={<Boutique />} />
                 <Route path="documents" element={<Documents />} />
                 <Route path="users" element={<Users />} />
+                <Route path="showcase" element={<Showcase />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

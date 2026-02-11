@@ -245,16 +245,35 @@ export const Clients: React.FC = () => {
                       </div>
                     </td>
                     <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${client.userId ? 'bg-green-500' :
-                          client.email ? 'bg-yellow-500' :
-                            'bg-gray-300'
-                          }`} />
-                        <span className="text-xs text-gray-600">
-                          {client.userId ? 'Connecté' :
-                            client.email ? 'Compte créé' :
-                              'Pas de compte'}
-                        </span>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${client.userId ? 'bg-green-500' :
+                            client.email ? 'bg-yellow-500' :
+                              'bg-gray-300'
+                            }`} />
+                          <span className="text-xs text-gray-600 font-medium">
+                            {client.userId ? 'Connecté' :
+                              client.email ? 'Compte créé' :
+                                'Pas de compte'}
+                          </span>
+                        </div>
+
+                        {(client.username || client.tempPassword) && (
+                          <div className="mt-1.5 p-1.5 bg-blue-50 border border-blue-100 rounded text-[10px] space-y-0.5 shadow-sm">
+                            {client.username && (
+                              <div className="flex justify-between items-center gap-2">
+                                <span className="text-blue-700 font-bold">ID:</span>
+                                <span className="font-mono text-gray-700 select-all">{client.username}</span>
+                              </div>
+                            )}
+                            {client.tempPassword && (
+                              <div className="flex justify-between items-center gap-2">
+                                <span className="text-blue-700 font-bold">Pass:</span>
+                                <span className="font-mono text-gray-700 select-all">{client.tempPassword}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Send, Check, X, Clock, AlertCircle, RotateCcw, Copy } from 'lucide-react';
+import { Mail, Send, Check, X, Clock, AlertCircle, RotateCcw, Copy, FolderPlus, AlertTriangle } from 'lucide-react';
+import { chantierService } from '../../services/chantierService';
+import { ChantierModal } from '../chantiers/ChantierModal';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -22,6 +24,8 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [credentials, setCredentials] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
+  const [hasChantier, setHasChantier] = useState<boolean | null>(null);
+  const [isChantierModalOpen, setIsChantierModalOpen] = useState(false);
   const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
 
   // Charger les invitations du client
@@ -37,6 +41,17 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
       toast.error('Impossible de charger les invitations');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Vérifier si le client a un chantier
+  const checkChantier = async () => {
+    if (!client.id) return;
+    try {
+      const chantier = await chantierService.getClientChantier(client.id);
+      setHasChantier(!!chantier);
+    } catch (error) {
+      console.error('Erreur vérification chantier:', error);
     }
   };
 
@@ -164,6 +179,7 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
   // Charger les invitations au montage
   useEffect(() => {
     loadInvitations();
+    checkChantier();
   }, [client.id]);
 
   // Écouter les changements en temps réel - désactivé temporairement
@@ -299,6 +315,29 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Alerte si pas de chantier */}
+        {!hasChantier && hasChantier !== null && (
+          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-orange-500 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-orange-800">Aucun projet de construction lié</h4>
+                <p className="text-xs text-orange-700 mt-1">
+                  Le client peut se connecter mais verra "Aucun chantier". Pour que son avancement s'affiche, vous devez créer un projet pour lui.
+                </p>
+                <Button
+                  onClick={() => setIsChantierModalOpen(true)}
+                  size="sm"
+                  className="mt-3 bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-2"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                  Créer le projet maintenant
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Identifiants de connexion sauvegardés */}
         {(client.username && client.tempPassword) && !credentials && (
@@ -532,6 +571,18 @@ export const ClientInvitations: React.FC<ClientInvitationsProps> = ({
         cancelText={confirmState.cancelText}
         type={confirmState.type}
         loading={confirmState.loading}
+      />
+
+      {/* Modal de création de chantier */}
+      <ChantierModal
+        isOpen={isChantierModalOpen}
+        onClose={() => setIsChantierModalOpen(false)}
+        onSuccess={() => {
+          setIsChantierModalOpen(false);
+          checkChantier();
+          onUpdate?.();
+        }}
+      // On laisse l'utilisateur confirmer le client dans la modal qui s'ouvre.
       />
     </Card>
   );
