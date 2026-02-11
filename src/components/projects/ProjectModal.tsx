@@ -33,7 +33,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     name: '',
     type: '',
     description: '',
-    images: [],
+    images: [] as string[],
     price: '',
     currency: 'FCFA',
     surface: '',
