@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Edit, Phone, MapPin, Users, Mail, Power, Filter } from 'lucide-react';
+import { Plus, Eye, Edit, Phone, MapPin, Users, Mail, Power, Filter, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Timestamp } from 'firebase/firestore';
 import { Card } from '../components/ui/Card';
@@ -10,12 +10,13 @@ import { ClientDetailsModal } from '../components/clients/ClientDetailsModal';
 import { ClientInvitations } from '../components/clients/ClientInvitations';
 import { Modal } from '../components/ui/Modal';
 import { useClientStore } from '../store/clientStore';
+import { useAuthStore } from '../store/authStore';
 import { useConfirm } from '../hooks/useConfirm';
-import type { Client } from '../types';
-import type { FirebaseClient } from '../types/firebase';
+import { UserRole, canUserPerformAction } from '../types/roles';
 
 export const Clients: React.FC = () => {
-  const { clients, addClient, updateClient, initializeClients, toggleClientStatus } = useClientStore();
+  const { clients, addClient, updateClient, deleteClient, initializeClients, toggleClientStatus } = useClientStore();
+  const { userData } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [selectedClient, setSelectedClient] = useState<Client | undefined>();
@@ -25,6 +26,9 @@ export const Clients: React.FC = () => {
   const [invitationClient, setInvitationClient] = useState<Client | undefined>();
   const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
 
+  const isSuperAdmin = userData?.role === UserRole.SUPER_ADMIN;
+  // Utilisation de la fonction pour vérifier les permissions de suppression
+  const canDelete = userData?.role ? canUserPerformAction(userData.role, 'canDeleteUsers') : false;
   // Initialiser les clients au montage du composant
   useEffect(() => {
     initializeClients();
@@ -87,6 +91,29 @@ export const Clients: React.FC = () => {
     }
   };
 
+  const handleDeleteClient = (client: Client) => {
+    if (!canDelete) {
+      toast.error('Vous n\'avez pas les permissions nécessaires pour supprimer un client');
+      return;
+    }
+
+    confirm(
+      async () => {
+        const success = await deleteClient(client.id);
+        if (success) {
+          toast.success('Client supprimé avec succès');
+        } else {
+          toast.error('Erreur lors de la suppression du client');
+        }
+      },
+      {
+        title: 'Supprimer le client',
+        message: `Êtes-vous sûr de vouloir supprimer définitivement le client "${client.prenom} ${client.nom}" ? Cette action est irréversible et supprimera toutes ses données associées.`,
+        confirmText: 'Supprimer',
+        type: 'danger'
+      }
+    );
+  };
 
 
 
@@ -321,6 +348,17 @@ export const Clients: React.FC = () => {
                         >
                           <Power className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Button>
+                        {canDelete && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDeleteClient(client)}
+                            className="p-1 sm:p-2"
+                            title="Supprimer définitivement"
+                          >
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
