@@ -117,21 +117,25 @@ export const feedbackService = {
     ) => {
         const feedbacksRef = collection(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION);
 
-        let q = query(
+        const q = query(
             feedbacksRef,
             where('phaseId', '==', phaseId),
             orderBy('createdAt', 'asc')
         );
 
-        if (stepId) {
-            q = query(q, where('stepId', '==', stepId));
-        }
-
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const feedbacks = snapshot.docs.map(doc => ({
+            let feedbacks = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             })) as VoiceNoteFeedback[];
+
+            // Filter locally by stepId to avoid needing a composite index
+            if (stepId) {
+                feedbacks = feedbacks.filter(f => f.stepId === stepId);
+            } else {
+                // If no stepId provided, we only want feedbacks belonging to the phase directly
+                feedbacks = feedbacks.filter(f => !f.stepId);
+            }
 
             onUpdate(feedbacks);
         }, (error) => {

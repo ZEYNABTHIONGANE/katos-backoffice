@@ -120,5 +120,11 @@ service cloud.firestore {
       // La logique métier filtrera les résultats appropriés
       allow list: if request.auth != null;
     }
+    
+    // Collection settings - Paramètres de l'application (Showcase, etc.)
+    match /settings/showcase {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }

@@ -289,8 +289,8 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
     onClose();
   };
 
-  // Filtrer les clients qui n'ont pas déjà un chantier
-  const availableClients = clients.filter(client => client.invitationStatus === 'accepted');
+  // Filtrer les clients qui sont actifs (inclut les prospects validés)
+  const availableClients = clients.filter(client => client.isActive);
 
   return (
     <Modal

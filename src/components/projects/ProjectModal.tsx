@@ -19,13 +19,26 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   onSubmit,
   project,
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    type: string;
+    description: string;
+    images: string[];
+    price: string;
+    currency: string;
+    surface: string;
+    bedrooms: string;
+    bathrooms: string;
+  }>({
     name: '',
     type: '',
     description: '',
-    images: [],
+    images: [] as string[],
     price: '',
     currency: 'FCFA',
+    surface: '',
+    bedrooms: '',
+    bathrooms: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,6 +53,9 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         images: project.images || [],
         price: project.price ? project.price.toString() : '',
         currency: project.currency || 'FCFA',
+        surface: project.surface ? project.surface.toString() : '',
+        bedrooms: project.bedrooms ? project.bedrooms.toString() : '',
+        bathrooms: project.bathrooms ? project.bathrooms.toString() : '',
       });
     } else {
       setFormData({
@@ -49,6 +65,9 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         images: [],
         price: '',
         currency: 'FCFA',
+        surface: '',
+        bedrooms: '',
+        bathrooms: '',
       });
     }
     setErrors({});
@@ -73,7 +92,10 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
     onSubmit({
       ...formData,
-      price: parseInt(formData.price) || 0
+      price: parseInt(formData.price) || 0,
+      surface: formData.surface ? parseInt(formData.surface) : undefined,
+      bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : undefined,
+      bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : undefined,
     });
     handleClose();
   };
@@ -86,6 +108,9 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       images: [],
       price: '',
       currency: 'FCFA',
+      surface: '',
+      bedrooms: '',
+      bathrooms: '',
     });
     setErrors({});
     onClose();
@@ -155,6 +180,30 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             <p className="text-xs text-gray-500">
               Prix total du projet en francs CFA. Ce montant sera utilisé pour calculer les échéances de paiement.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <Input
+              label="Surface (m²)"
+              type="number"
+              value={formData.surface}
+              onChange={(e) => setFormData({ ...formData, surface: e.target.value })}
+              placeholder="ex: 150"
+            />
+            <Input
+              label="Chambres"
+              type="number"
+              value={formData.bedrooms}
+              onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
+              placeholder="ex: 4"
+            />
+            <Input
+              label="Toilettes"
+              type="number"
+              value={formData.bathrooms}
+              onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
+              placeholder="ex: 3"
+            />
           </div>
 
           {/* Section Upload Images */}

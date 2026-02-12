@@ -83,6 +83,81 @@ export const ChantierDetail: React.FC = () => {
     return 'bg-gray-300';
   };
 
+  const renderGalleryItem = (photo: any) => {
+    // Robust video detection: check type OR file extension (case insensitive)
+    const isVideo = photo.type === 'video' ||
+      /\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(photo.url);
+
+    // Tentative de récupération d'une miniature pour la vidéo
+    let thumbnailUrl = photo.url;
+    let useVideoTag = false;
+
+    if (isVideo) {
+      if (photo.thumbnailUrl) {
+        thumbnailUrl = photo.thumbnailUrl;
+      } else if (photo.url.includes('cloudinary.com')) {
+        // Astuce Cloudinary: changer l'extension pour avoir une image jpg
+        // Attention aux query params (ex: ?alt=media&token=...)
+        const urlParts = photo.url.split('?');
+        const baseUrl = urlParts[0];
+        const queryParams = urlParts[1] ? `?${urlParts[1]}` : '';
+
+        // Remplace l'extension à la fin de l'URL de base
+        const newBaseUrl = baseUrl.replace(/\.[^/.]+$/, ".jpg");
+        thumbnailUrl = `${newBaseUrl}${queryParams}`;
+      } else {
+        // Fallback: use video tag to display the first frame
+        useVideoTag = true;
+      }
+    }
+
+    return (
+      <div key={photo.id} className="relative group cursor-pointer" onClick={() => window.open(photo.url, '_blank')}>
+        {isVideo && useVideoTag ? (
+          <video
+            src={`${photo.url}#t=0.5`}
+            className="w-full h-24 object-cover rounded-lg bg-gray-900"
+            preload="metadata"
+            muted
+            playsInline
+            onMouseOver={(e) => {
+              const video = e.target as HTMLVideoElement;
+              video.play().catch(() => { }); // Ignore auto-play errors
+            }}
+            onMouseOut={(e) => {
+              const video = e.target as HTMLVideoElement;
+              video.pause();
+              video.currentTime = 0.5; // Reset to thumb frame
+            }}
+          />
+        ) : (
+          <img
+            src={thumbnailUrl}
+            alt={photo.description || 'Progrès du chantier'}
+            className="w-full h-24 object-cover rounded-lg group-hover:opacity-90 transition-opacity bg-gray-100"
+            onError={(e) => {
+              // Fallback si la miniature générée échoue ou si l'image est cassée
+              (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Indisponible';
+            }}
+          />
+        )}
+
+        {isVideo && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-black bg-opacity-50 rounded-full p-2">
+              <span className="w-6 h-6 text-white">▶</span>
+            </div>
+          </div>
+        )}
+        {photo.description && (
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-2 rounded-b-lg truncate pointer-events-none">
+            {photo.description}
+          </div>
+        )}
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg pointer-events-none" />
+      </div>
+    );
+  };
   if (loading) {
     return (
       <div className="space-y-6">
@@ -207,23 +282,21 @@ export const ChantierDetail: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium text-gray-900">{phase.name}</h4>
                     {katosPhase.category && (
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        katosPhase.category === 'gros_oeuvre' ? 'bg-orange-100 text-orange-700' :
+                      <span className={`px-2 py-1 text-xs rounded ${katosPhase.category === 'gros_oeuvre' ? 'bg-orange-100 text-orange-700' :
                         katosPhase.category === 'second_oeuvre' ? 'bg-purple-100 text-purple-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
+                          'bg-gray-100 text-gray-700'
+                        }`}>
                         {katosPhase.category === 'gros_oeuvre' ? 'Gros œuvre' :
-                         katosPhase.category === 'second_oeuvre' ? 'Second œuvre' : 'Principal'}
+                          katosPhase.category === 'second_oeuvre' ? 'Second œuvre' : 'Principal'}
                       </span>
                     )}
                   </div>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    phase.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  <span className={`px-2 py-1 text-xs rounded-full ${phase.status === 'completed' ? 'bg-green-100 text-green-800' :
                     phase.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
+                      'bg-gray-100 text-gray-600'
+                    }`}>
                     {phase.status === 'completed' ? 'Terminée' :
-                     phase.status === 'in-progress' ? 'En cours' : 'En attente'}
+                      phase.status === 'in-progress' ? 'En cours' : 'En attente'}
                   </span>
                 </div>
                 {phase.description && (
@@ -253,33 +326,31 @@ export const ChantierDetail: React.FC = () => {
                         <div key={step.id} className="py-2 border-b border-gray-100 last:border-0">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                step.status === 'completed' ? 'bg-teal-500' :
+                              <div className={`w-2 h-2 rounded-full ${step.status === 'completed' ? 'bg-teal-500' :
                                 step.status === 'in-progress' ? 'bg-indigo-500' :
-                                'bg-slate-300'
-                              }`}></div>
+                                  'bg-slate-300'
+                                }`}></div>
                               <span className="text-sm text-gray-700">{step.name}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-16 bg-gray-200 rounded-full h-1.5">
                                 <div
-                                  className={`h-1.5 rounded-full ${
-                                    step.progress === 100 ? 'bg-teal-500' :
+                                  className={`h-1.5 rounded-full ${step.progress === 100 ? 'bg-teal-500' :
                                     step.progress >= 50 ? 'bg-indigo-500' :
-                                    step.progress > 0 ? 'bg-indigo-400' :
-                                    'bg-slate-300'
-                                  }`}
+                                      step.progress > 0 ? 'bg-indigo-400' :
+                                        'bg-slate-300'
+                                    }`}
                                   style={{ width: `${step.progress}%` }}
                                 ></div>
                               </div>
                               <span className="text-xs text-gray-500 w-8">{step.progress}%</span>
                             </div>
                           </div>
-                          
-                          <VoiceNoteList 
-                            chantierId={chantier.id || ''} 
-                            phaseId={phase.id} 
-                            stepId={step.id} 
+
+                          <VoiceNoteList
+                            chantierId={chantier.id || ''}
+                            phaseId={phase.id}
+                            stepId={step.id}
                           />
                         </div>
                       ))}
@@ -298,13 +369,17 @@ export const ChantierDetail: React.FC = () => {
                     {phase.updatedBy && ` par ${getUserName(phase.updatedBy)}`}
                   </div>
                 )}
-                
-                {!hasSteps && (
-                    <VoiceNoteList 
-                        chantierId={chantier.id || ''} 
-                        phaseId={phase.id} 
-                    />
-                )}
+
+                {/* Discussion de la phase */}
+                <div className="mt-6 border-t pt-4">
+                  <h5 className="text-sm font-semibold text-gray-700 mb-3">
+                    {hasSteps ? "Discussion générale de la phase" : "Messages et notes vocales"}
+                  </h5>
+                  <VoiceNoteList
+                    chantierId={chantier.id || ''}
+                    phaseId={phase.id}
+                  />
+                </div>
               </div>
             );
           })}
