@@ -96,7 +96,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
     onSubmit({
       ...formData,
-      invitationStatus: 'pending' as const
+      invitationStatus: 'pending' as const,
+      isActive: formData.status !== 'Terminé'
     });
     handleClose();
   };
@@ -126,157 +127,157 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     >
       <div className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-           <Input
-            label="Prénom"
-            value={formData.prenom}
-            onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
-            error={errors.prenom}
-            placeholder="Amadou"
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <Input
+              label="Prénom"
+              value={formData.prenom}
+              onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+              error={errors.prenom}
+              placeholder="Amadou"
+            />
+
+            <Input
+              label="Nom"
+              value={formData.nom}
+              onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+              error={errors.nom}
+              placeholder="Diallo"
+            />
+
+          </div>
 
           <Input
-            label="Nom"
-            value={formData.nom}
-            onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-            error={errors.nom}
-            placeholder="Diallo"
+            label="Email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            error={errors.email}
+            placeholder="amadou.diallo@example.com"
           />
 
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <Input
+              label="Téléphone"
+              value={formData.telephone}
+              onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+              error={errors.telephone}
+              placeholder="+221 77 123 45 67"
+            />
 
-        <Input
-          label="Email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          error={errors.email}
-          placeholder="amadou.diallo@example.com"
-        />
+            <Input
+              label="Adresse"
+              value={formData.adresse}
+              onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
+              error={errors.adresse}
+              placeholder="Rue 10, Cité Keur Gorgui"
+            />
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Input
-            label="Téléphone"
-            value={formData.telephone}
-            onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-            error={errors.telephone}
-            placeholder="+221 77 123 45 67"
+            label="Localisation du site"
+            value={formData.localisationSite}
+            onChange={(e) => setFormData({ ...formData, localisationSite: e.target.value })}
+            error={errors.localisationSite}
+            placeholder="Cité Keur Gorgui, Lot 25, Dakar"
           />
 
-          <Input
-            label="Adresse"
-            value={formData.adresse}
-            onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
-            error={errors.adresse}
-            placeholder="Rue 10, Cité Keur Gorgui"
-          />
-        </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-900">
+              Projet adhéré
+            </label>
+            <select
+              value={formData.projetAdhere}
+              onChange={(e) => setFormData({ ...formData, projetAdhere: e.target.value })}
+              className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
+            >
+              <option value="">Sélectionner un projet</option>
+              {projects.map((project) => (
+                <option key={project.id} value={`${project.name} ${project.type}`}>
+                  {project.name} {project.type}
+                </option>
+              ))}
+            </select>
+            {errors.projetAdhere && (
+              <p className="text-red-600 text-xs mt-1">{errors.projetAdhere}</p>
+            )}
+          </div>
 
-        <Input
-          label="Localisation du site"
-          value={formData.localisationSite}
-          onChange={(e) => setFormData({ ...formData, localisationSite: e.target.value })}
-          error={errors.localisationSite}
-          placeholder="Cité Keur Gorgui, Lot 25, Dakar"
-        />
-
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-900">
-            Projet adhéré
-          </label>
-          <select
-            value={formData.projetAdhere}
-            onChange={(e) => setFormData({ ...formData, projetAdhere: e.target.value })}
-            className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
-          >
-            <option value="">Sélectionner un projet</option>
-            {projects.map((project) => (
-              <option key={project.id} value={`${project.name} ${project.type}`}>
-                {project.name} {project.type}
-              </option>
-            ))}
-          </select>
-          {errors.projetAdhere && (
-            <p className="text-red-600 text-xs mt-1">{errors.projetAdhere}</p>
-          )}
-        </div>
-
-        {selectedProject && (
-          <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-semibold text-gray-900 mb-3">Aperçu du projet</h4>
-            <div className="space-y-3">
-              <ImageCarousel
-                images={selectedProject.images}
-                alt={selectedProject.name}
-                aspectRatio="wide"
-                className="h-24 sm:h-32"
-                showDots={true}
-                showArrows={true}
-              />
-              <div>
-                <h5 className="font-medium text-gray-900 text-sm sm:text-base">{selectedProject.name}</h5>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2 sm:line-clamp-3">{selectedProject.description}</p>
-                {selectedProject.price && (
-                  <p className="text-sm font-semibold text-blue-600 mt-1">
-                    {new Intl.NumberFormat('fr-FR', {
-                      style: 'decimal',
-                      minimumFractionDigits: 0,
-                    }).format(selectedProject.price)} FCFA
-                  </p>
-                )}
+          {selectedProject && (
+            <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Aperçu du projet</h4>
+              <div className="space-y-3">
+                <ImageCarousel
+                  images={selectedProject.images}
+                  alt={selectedProject.name}
+                  aspectRatio="wide"
+                  className="h-24 sm:h-32"
+                  showDots={true}
+                  showArrows={true}
+                />
+                <div>
+                  <h5 className="font-medium text-gray-900 text-sm sm:text-base">{selectedProject.name}</h5>
+                  <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2 sm:line-clamp-3">{selectedProject.description}</p>
+                  {selectedProject.price && (
+                    <p className="text-sm font-semibold text-blue-600 mt-1">
+                      {new Intl.NumberFormat('fr-FR', {
+                        style: 'decimal',
+                        minimumFractionDigits: 0,
+                      }).format(selectedProject.price)} FCFA
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-900">
+              Type de paiement
+            </label>
+            <select
+              value={formData.typePaiement}
+              onChange={(e) => setFormData({ ...formData, typePaiement: e.target.value as 'comptant' | 'echeancier' })}
+              className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
+            >
+              <option value="comptant">Paiement comptant</option>
+              <option value="echeancier">Échéancier de paiement</option>
+            </select>
+            <p className="text-xs text-gray-500">
+              {formData.typePaiement === 'comptant'
+                ? 'Le client paiera la totalité en une fois'
+                : 'Le client paiera en plusieurs échéances selon le montant du projet'
+              }
+            </p>
           </div>
-        )}
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-900">
-            Type de paiement
-          </label>
-          <select
-            value={formData.typePaiement}
-            onChange={(e) => setFormData({ ...formData, typePaiement: e.target.value as 'comptant' | 'echeancier' })}
-            className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
-          >
-            <option value="comptant">Paiement comptant</option>
-            <option value="echeancier">Échéancier de paiement</option>
-          </select>
-          <p className="text-xs text-gray-500">
-            {formData.typePaiement === 'comptant'
-              ? 'Le client paiera la totalité en une fois'
-              : 'Le client paiera en plusieurs échéances selon le montant du projet'
-            }
-          </p>
-        </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-900">
+              Statut
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as Client['status'] })}
+              className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
+            >
+              <option value="En attente">En attente</option>
+              <option value="En cours">En cours</option>
+              <option value="Terminé">Terminé</option>
+            </select>
+          </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-900">
-            Statut
-          </label>
-          <select
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as Client['status'] })}
-            className="block w-full h-12 px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors font-medium appearance-none"
-          >
-            <option value="En attente">En attente</option>
-            <option value="En cours">En cours</option>
-            <option value="Terminé">Terminé</option>
-          </select>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-200">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleClose}
-            className="w-full sm:w-auto order-2 sm:order-1"
-          >
-            Annuler
-          </Button>
-          <Button type="submit" className="w-full sm:w-auto order-1 sm:order-2">
-            {client ? 'Modifier' : 'Créer'}
-          </Button>
-        </div>
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-200">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              className="w-full sm:w-auto order-2 sm:order-1"
+            >
+              Annuler
+            </Button>
+            <Button type="submit" className="w-full sm:w-auto order-1 sm:order-2">
+              {client ? 'Modifier' : 'Créer'}
+            </Button>
+          </div>
         </form>
       </div>
     </Modal>

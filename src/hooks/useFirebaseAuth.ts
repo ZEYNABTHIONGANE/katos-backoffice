@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { authService } from '../services/authService';
 import type { FirebaseUser } from '../types/firebase';
+import { UserRole } from '../types/roles';
 
 export const useFirebaseAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -56,7 +58,8 @@ export const useFirebaseAuth = () => {
     try {
       setError(null);
       setLoading(true);
-      await authService.signUp(email, password, displayName, phoneNumber);
+      // Pass UserRole.CLIENT as role (4th arg)
+      await authService.signUp(email, password, displayName, UserRole.CLIENT, phoneNumber);
       return true;
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la création du compte');

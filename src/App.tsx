@@ -17,6 +17,7 @@ import { Users } from './pages/Users';
 import { Prospects } from './pages/Prospects';
 import { Showcase } from './pages/Showcase';
 import { Settings } from './pages/Settings';
+import { AccountingDashboard } from './pages/AccountingDashboard';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
@@ -43,7 +44,9 @@ function App() {
                 <Route path="projects" element={<Projects />} />
                 <Route path="chantiers" element={<Chantiers />} />
                 <Route path="chantiers/:id" element={<ChantierDetail />} />
+                <Route path="chantiers/:id" element={<ChantierDetail />} />
                 <Route path="boutique" element={<Boutique />} />
+                <Route path="accounting" element={<AccountingDashboard />} />
                 <Route path="documents" element={<Documents />} />
                 <Route path="users" element={<Users />} />
                 <Route path="showcase" element={<Showcase />} />

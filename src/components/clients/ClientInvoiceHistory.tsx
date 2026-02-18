@@ -6,13 +6,17 @@ import { Card } from '../ui/Card';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { invoiceService } from '../../services/invoiceService';
-import type { Client, Invoice, PaymentHistory } from '../../types';
+import type { Client, Invoice, PaymentHistory, InvoiceItem, Project } from '../../types';
+import { ReceiptPreview } from '../accounting/ReceiptPreview';
+import { useProjectStore } from '../../store/projectStore';
+import { Timestamp } from 'firebase/firestore';
 
 interface ClientInvoiceHistoryProps {
   client: Client;
 }
 
 export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ client }) => {
+  const { projects } = useProjectStore();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +24,12 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // État pour la prévisualisation du reçu
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<PaymentHistory | null>(null);
+
+  // Trouver le projet du client
+  const clientProject = projects.find(p => `${p.name} ${p.type}` === client.projetAdhere);
 
   // Formulaire nouvelle facture
   const [invoiceForm, setInvoiceForm] = useState({
@@ -100,17 +110,17 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
         return;
       }
 
-      const newInvoice = {
+      const newInvoice: any = {
         clientId: client.id,
         invoiceNumber,
         type: invoiceForm.type,
         totalAmount,
         paidAmount: 0,
         remainingAmount: totalAmount,
-        status: 'draft' as const,
-        paymentStatus: 'pending' as const,
-        issueDate: new Date(),
-        dueDate: new Date(invoiceForm.dueDate),
+        status: 'draft',
+        paymentStatus: 'pending',
+        issueDate: Timestamp.now(),
+        dueDate: Timestamp.fromDate(new Date(invoiceForm.dueDate)),
         description: invoiceForm.description,
         items: invoiceForm.items.map(item => ({
           ...item,
@@ -321,11 +331,11 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Date d'émission:</span>
-                      <p className="font-medium">{invoice.issueDate.toDate().toLocaleDateString('fr-FR')}</p>
+                      <p className="font-medium">{invoice.issueDate ? invoice.issueDate.toDate().toLocaleDateString('fr-FR') : '-'}</p>
                     </div>
                     <div>
                       <span className="text-gray-500">Échéance:</span>
-                      <p className="font-medium">{invoice.dueDate.toDate().toLocaleDateString('fr-FR')}</p>
+                      <p className="font-medium">{invoice.dueDate ? invoice.dueDate.toDate().toLocaleDateString('fr-FR') : '-'}</p>
                     </div>
                     <div>
                       <span className="text-gray-500">Montant:</span>
@@ -385,11 +395,19 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
                     <div>
                       <p className="font-medium">{formatCurrency(payment.amount)}</p>
                       <p className="text-sm text-gray-500">
-                        {payment.date.toDate().toLocaleDateString('fr-FR')} - {payment.method}
+                        {payment.date ? payment.date.toDate().toLocaleDateString('fr-FR') : '-'} - {payment.method}
                         {payment.reference && ` (${payment.reference})`}
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setSelectedPaymentForReceipt(payment)}
+                    className="text-blue-600 hover:text-blue-900 flex items-center gap-1 text-sm font-medium"
+                    title="Télécharger le reçu"
+                  >
+                    <Download className="w-4 h-4" />
+                    Reçu
+                  </button>
                 </div>
               </Card>
             ))}
@@ -410,7 +428,7 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
               <label className="block text-sm font-medium text-gray-700 mb-2">Type de facture</label>
               <select
                 value={invoiceForm.type}
-                onChange={(e) => setInvoiceForm({...invoiceForm, type: e.target.value as Invoice['type']})}
+                onChange={(e) => setInvoiceForm({ ...invoiceForm, type: e.target.value as Invoice['type'] })}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
               >
                 <option value="initial">Facture initiale</option>
@@ -424,14 +442,14 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
               label="Date d'échéance"
               type="date"
               value={invoiceForm.dueDate}
-              onChange={(e) => setInvoiceForm({...invoiceForm, dueDate: e.target.value})}
+              onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
             />
           </div>
 
           <Input
             label="Description"
             value={invoiceForm.description}
-            onChange={(e) => setInvoiceForm({...invoiceForm, description: e.target.value})}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })}
             placeholder="Description de la facture"
           />
 
@@ -531,7 +549,7 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
                 label="Montant"
                 type="number"
                 value={paymentForm.amount}
-                onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
+                onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
                 placeholder="0"
                 min="0"
                 max={selectedInvoice.remainingAmount}
@@ -541,7 +559,7 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
                 <label className="block text-sm font-medium text-gray-700 mb-2">Méthode</label>
                 <select
                   value={paymentForm.method}
-                  onChange={(e) => setPaymentForm({...paymentForm, method: e.target.value as any})}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value as any })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
                   <option value="cash">Espèces</option>
@@ -555,7 +573,7 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
             <Input
               label="Référence (optionnel)"
               value={paymentForm.reference}
-              onChange={(e) => setPaymentForm({...paymentForm, reference: e.target.value})}
+              onChange={(e) => setPaymentForm({ ...paymentForm, reference: e.target.value })}
               placeholder="Numéro de référence"
             />
 
@@ -579,6 +597,17 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
           </div>
         )}
       </Modal>
+
+      {/* Modal de prévisualisation du reçu */}
+      {selectedPaymentForReceipt && clientProject && (
+        <ReceiptPreview
+          payment={selectedPaymentForReceipt}
+          invoice={invoices.find(i => i.id === selectedPaymentForReceipt.invoiceId)}
+          client={client}
+          project={clientProject}
+          onClose={() => setSelectedPaymentForReceipt(null)}
+        />
+      )}
     </div>
   );
 };

@@ -66,13 +66,15 @@ export interface ClientDocument {
 
 export interface Notification {
   id: string;
-  type: 'document_upload' | 'material_selection' | 'client_update';
+  type: 'document_upload' | 'material_selection' | 'client_update' | 'payment';
   title: string;
   message: string;
-  clientId: string;
-  clientName: string;
   isRead: boolean;
-  createdAt: string;
+  createdAt: any;
+  userId?: string; // ID du client concerné
+  link?: string; // Lien vers la ressource
+  clientId?: string;
+  clientName?: string;
   data?: {
     documentName?: string;
     materialName?: string;

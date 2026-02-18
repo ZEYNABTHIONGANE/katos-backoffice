@@ -87,11 +87,10 @@ export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({
 
           <label
             htmlFor="multiple-image-upload"
-            className={`flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-              uploading || images.length >= maxImages
-                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
-            }`}
+            className={`flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${uploading || images.length >= maxImages
+              ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+              : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+              }`}
           >
             <Upload className="w-6 h-6 text-gray-400 mb-1" />
             <p className="text-xs text-gray-600">
@@ -107,7 +106,6 @@ export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({
             value={newImageUrl}
             onChange={(e) => setNewImageUrl(e.target.value)}
             placeholder="https://example.com/image.jpg"
-            size="sm"
             disabled={images.length >= maxImages}
           />
           <Button

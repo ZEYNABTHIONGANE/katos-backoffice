@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { User } from 'firebase/auth';
 import type { FirebaseUser } from '../types/firebase';
 import { authService } from '../services/authService';
+import { Timestamp } from 'firebase/firestore';
 
 interface FirebaseAuthState {
   user: User | null;
@@ -17,6 +18,7 @@ interface FirebaseAuthState {
   setError: (error: string | null) => void;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
+
 
 export const useAuthStore = create<FirebaseAuthState>((set, get) => ({
   user: null,
@@ -44,7 +46,14 @@ export const useAuthStore = create<FirebaseAuthState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       const user = await authService.signIn(email, password);
+      // Récupérer les données utilisateur et convertir les Timestamps si nécessaire
+      // Note: authService.getUserData retourne FirebaseUser avec Timestamp
+      // Si le store attend des dates en string, il faudrait convertir ici.
+      // Mais FirebaseUser a été défini avec Timestamp dans src/types/firebase.ts
+      // Vérifions si le composant attend des strings.
+      // Pour l'instant, on garde Timestamp comme défini dans l'interface.
       const userData = await authService.getUserData(user.uid);
+
       set({
         user,
         userData,
@@ -80,14 +89,17 @@ export const useAuthStore = create<FirebaseAuthState>((set, get) => ({
   setUser: (user) => set({ user, isAuthenticated: !!user }),
   setUserData: (userData) => {
     // Vérifier si l'utilisateur est bloqué
+    // Note: isBlocked est optionnel sur FirebaseUser
     if (userData && userData.isBlocked) {
       // Déconnecter automatiquement si bloqué
-      authService.signOut();
-      set({
-        user: null,
-        userData: null,
-        isAuthenticated: false,
-        error: 'Votre compte a été bloqué. Veuillez vous reconnecter.'
+      // Appel asynchrone sans await car dans un setter sync
+      authService.signOut().then(() => {
+        set({
+          user: null,
+          userData: null,
+          isAuthenticated: false,
+          error: 'Votre compte a été bloqué. Veuillez vous reconnecter.'
+        });
       });
       return;
     }

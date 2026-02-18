@@ -65,18 +65,25 @@ export class InvoiceService {
     try {
       const q = query(
         collection(db, this.invoicesCollection),
-        where('clientId', '==', clientId),
-        orderBy('issueDate', 'desc')
+        where('clientId', '==', clientId)
       );
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
+      const invoices = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Invoice[];
+
+      // Sort in memory to avoid needing a composite index
+      return invoices.sort((a, b) => {
+        const dateA = a.issueDate?.seconds || 0;
+        const dateB = b.issueDate?.seconds || 0;
+        return dateB - dateA;
+      });
     } catch (error) {
       console.error('Erreur lors de la récupération des factures:', error);
-      throw error;
+      // Return empty array instead of throwing to prevent crashing the dashboard
+      return [];
     }
   }
 
@@ -87,8 +94,7 @@ export class InvoiceService {
   ): () => void {
     const q = query(
       collection(db, this.invoicesCollection),
-      where('clientId', '==', clientId),
-      orderBy('issueDate', 'desc')
+      where('clientId', '==', clientId)
     );
 
     return onSnapshot(q, (snapshot) => {
@@ -96,6 +102,14 @@ export class InvoiceService {
         id: doc.id,
         ...doc.data()
       })) as Invoice[];
+
+      // Sort in memory
+      invoices.sort((a, b) => {
+        const dateA = a.issueDate?.seconds || 0;
+        const dateB = b.issueDate?.seconds || 0;
+        return dateB - dateA;
+      });
+
       callback(invoices);
     });
   }
@@ -169,8 +183,34 @@ export class InvoiceService {
     try {
       const q = query(
         collection(db, this.paymentsCollection),
-        where('clientId', '==', clientId),
-        orderBy('date', 'desc')
+        where('clientId', '==', clientId)
+      );
+
+      const snapshot = await getDocs(q);
+      const history = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as PaymentHistory[];
+
+      // Sort in memory
+      return history.sort((a, b) => {
+        const dateA = a.date?.seconds || 0;
+        const dateB = b.date?.seconds || 0;
+        return dateB - dateA;
+      });
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'historique:', error);
+      return [];
+    }
+  }
+
+  // Récupérer l'historique complet de tous les paiements (Dashboard)
+  async getAllPaymentHistory(): Promise<PaymentHistory[]> {
+    try {
+      const q = query(
+        collection(db, this.paymentsCollection),
+        orderBy('date', 'desc'),
+        limit(100)
       );
 
       const snapshot = await getDocs(q);
@@ -179,8 +219,8 @@ export class InvoiceService {
         ...doc.data()
       })) as PaymentHistory[];
     } catch (error) {
-      console.error('Erreur lors de la récupération de l\'historique:', error);
-      throw error;
+      console.error('Erreur lors de la récupération de l\'historique global:', error);
+      return [];
     }
   }
 
@@ -228,9 +268,9 @@ export class InvoiceService {
       this.getClientPaymentSchedule(clientId)
     ]);
 
-    const totalProjectCost = invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+    const totalProjectCost = schedule ? schedule.totalAmount : invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
     const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
-    const totalRemaining = totalProjectCost - totalPaid;
+    const totalRemaining = Math.max(0, totalProjectCost - totalPaid);
 
     // Trouver la prochaine échéance
     let nextPayment;
@@ -248,11 +288,14 @@ export class InvoiceService {
       );
     }
 
+    const totalOverdue = overduePayments ? overduePayments.reduce((sum, inst) => sum + inst.amount, 0) : 0;
+
     return {
       clientId,
       totalProjectCost,
       totalPaid,
       totalRemaining,
+      totalOverdue,
       currentSchedule: schedule || undefined,
       nextPayment,
       overduePayments: overduePayments || [],

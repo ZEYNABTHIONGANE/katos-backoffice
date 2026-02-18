@@ -1,0 +1,10 @@
+
+C:\Users\Hp\Desktop\APP FINAL\katos-backoffice-master\src\services\accountingService.ts
+    3:5   error  'addDoc' is defined but never used        @typescript-eslint/no-unused-vars
+    6:5   error  'updateDoc' is defined but never used     @typescript-eslint/no-unused-vars
+    7:5   error  'getDoc' is defined but never used        @typescript-eslint/no-unused-vars
+  140:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  301:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 5 problems (5 errors, 0 warnings)
+

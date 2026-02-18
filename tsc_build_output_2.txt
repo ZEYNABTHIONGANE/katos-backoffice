@@ -1,0 +1,27 @@
+src/components/accounting/ReceiptPreview.tsx(2,19): error TS6133: 'Download' is declared but its value is never read.
+src/components/accounting/ReceiptPreview.tsx(17,5): error TS6133: 'invoice' is declared but its value is never read.
+src/components/clients/ClientInvoiceHistory.tsx(2,41): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/clients/ClientInvoiceHistory.tsx(9,48): error TS6196: 'InvoiceItem' is declared but never used.
+src/components/clients/ClientInvoiceHistory.tsx(9,61): error TS6196: 'Project' is declared but never used.
+src/components/ui/ConfirmModal.tsx(2,33): error TS6133: 'X' is declared but its value is never read.
+src/components/ui/MultiImageUploader.tsx(110,13): error TS2322: Type 'string' is not assignable to type 'number'.
+src/hooks/useUserNames.ts(3,1): error TS6133: 'FirebaseUser' is declared but its value is never read.
+src/pages/ChantierDetail.tsx(86,9): error TS6133: 'renderGalleryItem' is declared but its value is never read.
+src/scripts/migrateChantierPhases.ts(11,15): error TS6196: 'FirebaseChantier' is declared but never used.
+src/scripts/migrateChantierPhases.ts(304,7): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+src/scripts/migrateChantierPhases.ts(308,7): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+src/services/accountingService.ts(3,5): error TS6133: 'addDoc' is declared but its value is never read.
+src/services/accountingService.ts(7,5): error TS6133: 'getDoc' is declared but its value is never read.
+src/services/accountingService.ts(8,5): error TS6133: 'writeBatch' is declared but its value is never read.
+src/services/accountingService.ts(153,9): error TS6133: 'receivedBy' is declared but its value is never read.
+src/services/adminService.ts(14,1): error TS6133: 'Admin' is declared but its value is never read.
+src/services/clientSelectionService.ts(3,3): error TS6133: 'addDoc' is declared but its value is never read.
+src/services/invitationService.ts(291,17): error TS6133: 'getOrCreateInvitation' is declared but its value is never read.
+src/services/invoiceService.ts(10,3): error TS6133: 'deleteDoc' is declared but its value is never read.
+src/store/adminStore.ts(40,55): error TS6133: 'get' is declared but its value is never read.
+src/store/authStore.ts(5,1): error TS6133: 'Timestamp' is declared but its value is never read.
+src/store/authStore.ts(23,61): error TS6133: 'get' is declared but its value is never read.
+src/store/materialStore.ts(2,1): error TS6133: 'Timestamp' is declared but its value is never read.
+src/store/projectStore.ts(2,1): error TS6133: 'Timestamp' is declared but its value is never read.
+src/utils/initSuperAdmin.ts(3,15): error TS6133: 'getDoc' is declared but its value is never read.
+src/utils/notificationTriggers.ts(2,1): error TS6133: 'Notification' is declared but its value is never read.

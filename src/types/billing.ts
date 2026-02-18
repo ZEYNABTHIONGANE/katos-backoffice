@@ -103,6 +103,7 @@ export interface ClientPaymentDashboard {
   totalProjectCost: number;
   totalPaid: number;
   totalRemaining: number;
+  totalOverdue: number;
 
   // Échéancier actuel
   currentSchedule?: PaymentSchedule;

@@ -466,7 +466,6 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
               value={formData.startDate}
               onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
               error={errors.startDate}
-              min={new Date().toISOString().split('T')[0]} // Au minimum aujourd'hui
             />
 
             <Input
@@ -475,7 +474,7 @@ export const ChantierModal: React.FC<ChantierModalProps> = ({
               value={formData.plannedEndDate}
               onChange={(e) => setFormData({ ...formData, plannedEndDate: e.target.value })}
               error={errors.plannedEndDate}
-              min={formData.startDate || new Date().toISOString().split('T')[0]}
+              min={formData.startDate}
             />
           </div>
 
