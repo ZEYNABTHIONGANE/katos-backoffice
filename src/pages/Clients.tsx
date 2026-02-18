@@ -12,7 +12,9 @@ import { Modal } from '../components/ui/Modal';
 import { useClientStore } from '../store/clientStore';
 import { useAuthStore } from '../store/authStore';
 import { useConfirm } from '../hooks/useConfirm';
-import { UserRole, canUserPerformAction } from '../types/roles';
+import { canUserPerformAction } from '../types/roles';
+import type { Client } from '../types';
+import type { FirebaseClient } from '../types/firebase';
 
 export const Clients: React.FC = () => {
   const { clients, addClient, updateClient, deleteClient, initializeClients, toggleClientStatus } = useClientStore();
@@ -26,7 +28,6 @@ export const Clients: React.FC = () => {
   const [invitationClient, setInvitationClient] = useState<Client | undefined>();
   const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
 
-  const isSuperAdmin = userData?.role === UserRole.SUPER_ADMIN;
   // Utilisation de la fonction pour vérifier les permissions de suppression
   const canDelete = userData?.role ? canUserPerformAction(userData.role, 'canDeleteUsers') : false;
   // Initialiser les clients au montage du composant

@@ -78,6 +78,43 @@ export const notificationService = {
     }
   },
 
+  // Envoyer un rappel de paiement
+  async sendPaymentReminder(
+    clientId: string,
+    amount: number,
+    dueDate: Date,
+    type: 'upcoming' | 'due_today' | 'overdue'
+  ) {
+    let title = '';
+    let message = '';
+    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(amount);
+    const dateStr = dueDate.toLocaleDateString('fr-FR');
+
+    switch (type) {
+      case 'upcoming':
+        title = 'Rappel de paiement à venir';
+        message = `Bonjour cher client, nous vous rappelons votre paiement mensuel de ${formattedAmount} prévu à la date du ${dateStr}. Merci de votre confiance.`;
+        break;
+      case 'due_today':
+        title = 'Paiement dû aujourd\'hui';
+        message = `Bonjour cher client, nous vous rappelons que votre paiement mensuel de ${formattedAmount} est prévu pour aujourd'hui (${dateStr}). Merci de votre confiance.`;
+        break;
+      case 'overdue':
+        title = 'Paiement en retard';
+        message = `Bonjour cher client, nous vous rappelons votre paiement mensuel de ${formattedAmount} qui était prévu à la date du ${dateStr} et qui est actuellement en retard. Merci de votre confiance.`;
+        break;
+    }
+
+    await this.createNotification({
+      userId: clientId,
+      type: 'payment',
+      title,
+      message,
+      isRead: false,
+      link: '/billing'
+    });
+  },
+
   // Obtenir l'icône selon le type de notification
   getNotificationIcon(type: Notification['type']): string {
     switch (type) {
@@ -87,6 +124,8 @@ export const notificationService = {
         return '🛒';
       case 'client_update':
         return '👤';
+      case 'payment':
+        return '💰';
       default:
         return '🔔';
     }
@@ -101,6 +140,8 @@ export const notificationService = {
         return 'bg-green-100 text-green-800 border-green-200';
       case 'client_update':
         return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'payment':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -134,5 +175,23 @@ export const notificationService = {
   // Compter les notifications non lues
   countUnreadNotifications(notifications: Notification[]): number {
     return notifications.filter(n => !n.isRead).length;
+  },
+
+  // Notifier le client d'un paiement reçu
+  async notifyPaymentReceived(
+    clientId: string,
+    amount: number,
+    description: string
+  ) {
+    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(amount);
+
+    await this.createNotification({
+      userId: clientId,
+      type: 'payment',
+      title: 'Paiement reçu',
+      message: `Nous avons bien reçu votre paiement de ${formattedAmount} ${description}. Vous pouvez consulter votre reçu dans l'application.`,
+      isRead: false,
+      link: '/billing'
+    });
   }
 };

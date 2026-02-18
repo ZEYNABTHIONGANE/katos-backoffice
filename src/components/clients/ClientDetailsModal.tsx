@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { User, Mail, MapPin, Phone, Calendar, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Mail, MapPin, Phone, Calendar, Settings, CreditCard } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { ClientInvitations } from './ClientInvitations';
+import { ClientBilling } from './ClientBilling';
 import type { Client } from '../../types';
 import type { FirebaseClient } from '../../types/firebase';
 import { Timestamp } from 'firebase/firestore';
@@ -11,15 +12,23 @@ interface ClientDetailsModalProps {
   onClose: () => void;
   client: Client;
   onUpdate?: () => void;
+  initialTab?: 'infos' | 'access' | 'billing';
 }
 
 export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
   isOpen,
   onClose,
   client,
-  onUpdate
+  onUpdate,
+  initialTab = 'infos'
 }) => {
-  const [activeTab, setActiveTab] = useState<'infos' | 'access'>('infos');
+  const [activeTab, setActiveTab] = useState<'infos' | 'access' | 'billing'>(initialTab);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // Convertir Client vers FirebaseClient pour les invitations
   const convertToFirebaseClient = (client: Client): FirebaseClient => ({
@@ -37,6 +46,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
     userId: client.userId,
     username: client.username,
     tempPassword: client.tempPassword,
+    typePaiement: client.typePaiement,
     createdAt: Timestamp.fromDate(new Date(client.createdAt)),
     invitedAt: client.invitedAt ? Timestamp.fromDate(new Date(client.invitedAt)) : undefined,
     acceptedAt: client.acceptedAt ? Timestamp.fromDate(new Date(client.acceptedAt)) : undefined
@@ -57,6 +67,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
 
   const tabs = [
     { key: 'infos', label: 'Informations', icon: User },
+    { key: 'billing', label: 'Facturation & Paiements', icon: CreditCard },
     { key: 'access', label: 'Accès App', icon: Settings }
   ] as const;
 
@@ -95,11 +106,10 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === key
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === key
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
@@ -172,8 +182,11 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
           {activeTab === 'access' && (
             <ClientInvitations
               client={convertToFirebaseClient(client)}
-              onUpdate={onUpdate}
             />
+          )}
+
+          {activeTab === 'billing' && (
+            <ClientBilling client={client} />
           )}
         </div>
       </div>

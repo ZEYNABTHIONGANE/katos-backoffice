@@ -9,21 +9,33 @@ interface AdminState {
   error: string | null;
 
   // Actions
-  initializeAdmins: () => void;
+  initializeAdmins: () => Promise<void>;
   addAdmin: (adminData: Omit<Admin, 'id' | 'createdAt'>) => Promise<boolean>;
-  updateAdmin: (id: string, adminData: Omit<Admin, 'id' | 'createdAt'>) => Promise<boolean>;
+  updateAdmin: (id: string, adminData: Partial<Admin>) => Promise<boolean>;
   deleteAdmin: (id: string) => Promise<boolean>;
   setAdmins: (admins: Admin[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
 
-const convertFirebaseAdmin = (firebaseAdmin: any): Admin => ({
-  ...firebaseAdmin,
-  createdAt: firebaseAdmin.createdAt.toDate().toISOString(),
-  invitedAt: firebaseAdmin.invitedAt?.toDate().toISOString(),
-  acceptedAt: firebaseAdmin.acceptedAt?.toDate().toISOString(),
-});
+const convertFirebaseAdmin = (firebaseAdmin: any): Admin => {
+  const data = firebaseAdmin;
+  return {
+    id: data.id,
+    nom: data.nom,
+    prenom: data.prenom,
+    email: data.email,
+    phoneNumber: data.phoneNumber,
+    status: data.status,
+    invitationStatus: data.invitationStatus,
+    invitationToken: data.invitationToken,
+    tempPassword: data.tempPassword,
+    userId: data.userId,
+    createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+    invitedAt: data.invitedAt?.toDate?.()?.toISOString(),
+    acceptedAt: data.acceptedAt?.toDate?.()?.toISOString()
+  };
+};
 
 export const useAdminStore = create<AdminState>((set, get) => ({
   admins: [],
@@ -46,8 +58,16 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       set({ error: null });
       const tempPassword = adminService.generateTemporaryPassword();
+
+      // Conversion des données pour Firebase (tout ce qui est string date doit être géré si présent)
+      // Pour la création, on ignore les dates optionnelles qui viendraient de l'UI comme string
+      // car elles sont gérées par le service ou pas encore là.
+
       const firebaseAdmin = await adminService.createAdmin({
-        ...adminData,
+        nom: adminData.nom,
+        prenom: adminData.prenom,
+        email: adminData.email,
+        phoneNumber: adminData.phoneNumber,
         status: 'En attente',
         invitationStatus: 'pending',
         tempPassword,
@@ -72,7 +92,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   updateAdmin: async (id, adminData) => {
     try {
       set({ error: null });
-      const success = await adminService.updateAdmin(id, adminData);
+
+      // Conversion partiel : si dates présentes en string, on les convertit en Timestamp pour le service
+      const updateData: any = { ...adminData };
+      if (adminData.invitedAt) updateData.invitedAt = Timestamp.fromDate(new Date(adminData.invitedAt));
+      if (adminData.acceptedAt) updateData.acceptedAt = Timestamp.fromDate(new Date(adminData.acceptedAt));
+      // createdAt ne devrait pas être mis à jour ici
+
+      const success = await adminService.updateAdmin(id, updateData);
 
       if (success) {
         set(state => ({

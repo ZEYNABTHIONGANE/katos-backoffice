@@ -1,0 +1,17 @@
+
+C:\Users\Hp\Desktop\APP FINAL\katos-backoffice-master\src\components\clients\ClientBilling.tsx
+    2:22  error    'Calendar' is defined but never used                                                                                      @typescript-eslint/no-unused-vars
+   25:60  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+   32:66  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+   34:78  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+   66:6   warning  React Hook useEffect has a missing dependency: 'fetchPaymentDashboard'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   97:22  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+  210:39  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+  218:40  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+  327:31  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+  409:54  error    'err' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  483:63  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+  523:36  error    'err' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+
+✖ 12 problems (11 errors, 1 warning)
+
