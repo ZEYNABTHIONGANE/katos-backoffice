@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, User, Camera, Users, BarChart3, Clock } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { motion } from 'framer-motion';
 import { useRealtimeChantier } from '../hooks/useRealtimeChantier';
 import { useUserNames } from '../hooks/useUserNames';
 import { VoiceNoteList } from '../components/chantiers/VoiceNoteList';
@@ -212,44 +213,94 @@ export const ChantierDetail: React.FC = () => {
       </div>
 
       {/* Statistiques principales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-blue-600" />
-            <div>
-              <div className="text-2xl font-bold text-gray-900">{globalProgress}%</div>
-              <div className="text-sm text-gray-600">Progression</div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        <motion.div
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-blue-100 group transition-shadow hover:shadow-md"
+        >
+          <div className="flex flex-col h-full justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-blue-50 group-hover:scale-110 transition-transform duration-300">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Clock className="w-8 h-8 text-yellow-600" />
             <div>
-              <div className="text-2xl font-bold text-gray-900">{phasesActives.length}</div>
-              <div className="text-sm text-gray-600">Phases actives</div>
+              <p className="text-sm font-medium text-gray-500">Progression</p>
+              <div className="flex items-baseline mt-1">
+                <p className="text-2xl font-bold text-gray-900">{globalProgress}%</p>
+              </div>
             </div>
+            <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-5 bg-gradient-to-br from-blue-900 to-transparent pointer-events-none" />
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Users className="w-8 h-8 text-green-600" />
+        </motion.div>
+
+        <motion.div
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-yellow-100 group transition-shadow hover:shadow-md"
+        >
+          <div className="flex flex-col h-full justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-yellow-50 group-hover:scale-110 transition-transform duration-300">
+                <Clock className="w-6 h-6 text-yellow-600" />
+              </div>
+              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-yellow-50 text-yellow-600 bg-opacity-50">
+                {phasesActives.length} actives
+              </span>
+            </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">{totalEquipe}</div>
-              <div className="text-sm text-gray-600">Membres équipe</div>
+              <p className="text-sm font-medium text-gray-500">Phases</p>
+              <div className="flex items-baseline mt-1">
+                <p className="text-2xl font-bold text-gray-900">{chantier.phases.length}</p>
+              </div>
             </div>
+            <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-5 bg-gradient-to-br from-yellow-900 to-transparent pointer-events-none" />
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Camera className="w-8 h-8 text-purple-600" />
+        </motion.div>
+
+        <motion.div
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-green-100 group transition-shadow hover:shadow-md"
+        >
+          <div className="flex flex-col h-full justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-green-50 group-hover:scale-110 transition-transform duration-300">
+                <Users className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">{totalPhotos}</div>
-              <div className="text-sm text-gray-600">Photos</div>
+              <p className="text-sm font-medium text-gray-500">Membres équipe</p>
+              <div className="flex items-baseline mt-1">
+                <p className="text-2xl font-bold text-gray-900">{totalEquipe}</p>
+              </div>
             </div>
+            <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-5 bg-gradient-to-br from-green-900 to-transparent pointer-events-none" />
           </div>
-        </Card>
-      </div>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-purple-100 group transition-shadow hover:shadow-md"
+        >
+          <div className="flex flex-col h-full justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-purple-50 group-hover:scale-110 transition-transform duration-300">
+                <Camera className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Photos / Vidéos</p>
+              <div className="flex items-baseline mt-1">
+                <p className="text-2xl font-bold text-gray-900">{totalPhotos}</p>
+              </div>
+            </div>
+            <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-5 bg-gradient-to-br from-purple-900 to-transparent pointer-events-none" />
+          </div>
+        </motion.div>
+      </motion.div>
 
       {/* Progression générale */}
       <Card className="p-6">

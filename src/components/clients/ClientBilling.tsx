@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, CheckCircle, AlertCircle, Clock, Euro, Banknote, Trash2, Bell } from 'lucide-react';
+import { CreditCard, CheckCircle, AlertCircle, Clock, Banknote, Trash2, Bell } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Modal } from '../ui/Modal';
@@ -543,7 +543,7 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
       ) : (
         <div className="text-center py-8">
           <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Euro className="w-8 h-8 text-gray-400" />
+            <Banknote className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Aucune facturation active

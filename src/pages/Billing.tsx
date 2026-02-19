@@ -110,7 +110,7 @@ export const Billing: React.FC = () => {
                       {invoice.client}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}
+                      {invoice.amount.toLocaleString('fr-FR', { style: 'decimal', minimumFractionDigits: 0 })} FCFA
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {invoice.status === 'paid' && (

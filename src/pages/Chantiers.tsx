@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { Plus, MapPin, User, Calendar, BarChart3, Search, Filter, Edit, Trash2 } from 'lucide-react';
+import { Plus, MapPin, User, Calendar, BarChart3, Search, Filter, Edit, Trash2, Clock, CheckCircle, AlertCircle, Layout } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -83,7 +84,7 @@ export const Chantiers: React.FC = () => {
   // Filtrer les chantiers
   const filteredChantiers = chantiers.filter(chantier => {
     const matchesSearch = chantier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         chantier.address.toLowerCase().includes(searchTerm.toLowerCase());
+      chantier.address.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'Tous' || chantier.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -158,22 +159,40 @@ export const Chantiers: React.FC = () => {
       </Card>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+      >
         {[
-          { label: 'Tous', count: totalChantiers, color: 'text-gray-900' },
-          { label: 'En attente', count: chantiersEnAttente, color: 'text-yellow-600' },
-          { label: 'En cours', count: chantiersActifs, color: 'text-blue-600' },
-          { label: 'Terminé', count: chantiersTermines, color: 'text-green-600' },
-          { label: 'En retard', count: chantiersEnRetard, color: 'text-red-600' }
+          { label: 'Tous', count: totalChantiers, color: 'text-slate-600', icon: Layout, bgColor: 'bg-slate-50', borderColor: 'border-slate-100' },
+          { label: 'En attente', count: chantiersEnAttente, color: 'text-yellow-600', icon: Clock, bgColor: 'bg-yellow-50', borderColor: 'border-yellow-100' },
+          { label: 'En cours', count: chantiersActifs, color: 'text-blue-600', icon: BarChart3, bgColor: 'bg-blue-50', borderColor: 'border-blue-100' },
+          { label: 'Terminé', count: chantiersTermines, color: 'text-emerald-600', icon: CheckCircle, bgColor: 'bg-emerald-50', borderColor: 'border-emerald-100' },
+          { label: 'En retard', count: chantiersEnRetard, color: 'text-red-600', icon: AlertCircle, bgColor: 'bg-red-50', borderColor: 'border-red-100' }
         ].map((stat) => (
-          <Card key={stat.label} className="p-4">
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${stat.color}`}>{stat.count}</div>
-              <div className="text-sm text-gray-600">{stat.label}</div>
+          <motion.div
+            key={stat.label}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            className={`relative overflow-hidden rounded-2xl bg-white p-4 shadow-sm border ${stat.borderColor} group transition-shadow hover:shadow-md`}
+          >
+            <div className="flex flex-col h-full justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <div className={`p-2 rounded-lg ${stat.bgColor} group-hover:scale-110 transition-transform duration-300`}>
+                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500">{stat.label}</p>
+                <div className="flex items-baseline mt-1">
+                  <p className="text-xl font-bold text-gray-900">{stat.count}</p>
+                </div>
+              </div>
+              <div className="absolute -right-4 -bottom-4 w-16 h-16 rounded-full opacity-5 bg-gradient-to-br from-gray-900 to-transparent pointer-events-none" />
             </div>
-          </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Liste des chantiers */}
       {loading ? (

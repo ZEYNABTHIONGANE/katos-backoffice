@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Eye, Plus, Calendar, CreditCard, CheckCircle, Clock, AlertTriangle, Euro } from 'lucide-react';
+import { FileText, Download, Eye, Plus, Calendar, CreditCard, CheckCircle, Clock, AlertTriangle, Banknote } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -255,7 +255,7 @@ export const ClientInvoiceHistory: React.FC<ClientInvoiceHistoryProps> = ({ clie
         <Card className="p-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <Euro className="w-5 h-5 text-blue-600" />
+              <Banknote className="w-5 h-5 text-blue-600" />
             </div>
             <div>
               <p className="text-sm text-gray-500">Total facturé</p>
