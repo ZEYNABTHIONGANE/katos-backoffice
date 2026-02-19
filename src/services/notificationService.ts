@@ -87,7 +87,7 @@ export const notificationService = {
   ) {
     let title = '';
     let message = '';
-    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(amount);
+    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0 }).format(amount) + ' FCFA';
     const dateStr = dueDate.toLocaleDateString('fr-FR');
 
     switch (type) {
@@ -183,7 +183,7 @@ export const notificationService = {
     amount: number,
     description: string
   ) {
-    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(amount);
+    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0 }).format(amount) + ' FCFA';
 
     await this.createNotification({
       userId: clientId,
