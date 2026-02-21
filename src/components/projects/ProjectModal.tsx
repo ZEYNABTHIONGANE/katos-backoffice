@@ -45,32 +45,35 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
   // Mettre à jour le formulaire quand le projet change
   useEffect(() => {
-    if (project) {
-      setFormData({
-        name: project.name || '',
-        type: project.type || '',
-        description: project.description || '',
-        images: project.images || [],
-        price: project.price ? project.price.toString() : '',
-        currency: project.currency || 'FCFA',
-        surface: project.surface ? project.surface.toString() : '',
-        bedrooms: project.bedrooms ? project.bedrooms.toString() : '',
-        bathrooms: project.bathrooms ? project.bathrooms.toString() : '',
-      });
-    } else {
-      setFormData({
-        name: '',
-        type: '',
-        description: '',
-        images: [],
-        price: '',
-        currency: 'FCFA',
-        surface: '',
-        bedrooms: '',
-        bathrooms: '',
-      });
+    if (isOpen) {
+      if (project) {
+        console.log('Populating modal with project:', project);
+        setFormData({
+          name: project.name || '',
+          type: project.type || '',
+          description: project.description || '',
+          images: project.images || [],
+          price: (project.price !== undefined && project.price !== null) ? project.price.toString() : '',
+          currency: project.currency || 'FCFA',
+          surface: (project.surface !== undefined && project.surface !== null) ? project.surface.toString() : '',
+          bedrooms: (project.bedrooms !== undefined && project.bedrooms !== null) ? project.bedrooms.toString() : '',
+          bathrooms: (project.bathrooms !== undefined && project.bathrooms !== null) ? project.bathrooms.toString() : '',
+        });
+      } else {
+        setFormData({
+          name: '',
+          type: '',
+          description: '',
+          images: [],
+          price: '',
+          currency: 'FCFA',
+          surface: '',
+          bedrooms: '',
+          bathrooms: '',
+        });
+      }
+      setErrors({});
     }
-    setErrors({});
   }, [project, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {

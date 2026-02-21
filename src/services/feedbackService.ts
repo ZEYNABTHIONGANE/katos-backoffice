@@ -107,6 +107,29 @@ export const feedbackService = {
     },
 
     /**
+     * Subscribes to all voice notes/feedbacks for a chantier
+     */
+    subscribeToAllChantierFeedbacks: (
+        chantierId: string,
+        onUpdate: (feedbacks: VoiceNoteFeedback[]) => void
+    ) => {
+        const feedbacksRef = collection(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION);
+        const q = query(feedbacksRef, orderBy('createdAt', 'desc'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const feedbacks = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as VoiceNoteFeedback[];
+            onUpdate(feedbacks);
+        }, (error) => {
+            console.error("Error creating all-feedbacks listener:", error);
+        });
+
+        return unsubscribe;
+    },
+
+    /**
      * Subscribes to voice notes for a specific step (or phase)
      */
     subscribeToStepFeedbacks: (

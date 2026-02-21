@@ -11,7 +11,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Prospects', href: '/prospects', icon: UserPlus },
   { name: 'Clients', href: '/clients', icon: Users },
-  { name: 'Villas', href: '/projects', icon: Building2 },
+  { name: 'Biens Immobiliers', href: '/projects', icon: Building2 },
   { name: 'Projets', href: '/chantiers', icon: HardHat },
   { name: 'Comptabilité', href: '/accounting', icon: Banknote },
   { name: 'Boutique', href: '/boutique', icon: ShoppingBag },

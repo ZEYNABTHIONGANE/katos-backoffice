@@ -12,6 +12,9 @@ interface ProjectForApp {
   type: string;
   price: number;
   currency: string;
+  surface?: number;
+  bedrooms?: number;
+  bathrooms?: number;
 }
 
 interface FirebaseProjectState {
@@ -36,7 +39,10 @@ const convertFirebaseProject = (firebaseProject: FirebaseProject): ProjectForApp
   images: firebaseProject.images,
   type: firebaseProject.type,
   price: firebaseProject.price || 0,
-  currency: firebaseProject.currency || 'FCFA'
+  currency: firebaseProject.currency || 'FCFA',
+  surface: firebaseProject.surface,
+  bedrooms: firebaseProject.bedrooms,
+  bathrooms: firebaseProject.bathrooms
 });
 
 // Fonction pour convertir ProjectForApp vers FirebaseProject
@@ -46,7 +52,10 @@ const convertToFirebaseProject = (project: Omit<ProjectForApp, 'id'>): Omit<Fire
   images: project.images,
   type: project.type,
   price: project.price || 0,
-  currency: project.currency || 'FCFA'
+  currency: project.currency || 'FCFA',
+  surface: project.surface,
+  bedrooms: project.bedrooms,
+  bathrooms: project.bathrooms
 });
 
 export const useProjectStore = create<FirebaseProjectState>((set, get) => ({
@@ -82,6 +91,9 @@ export const useProjectStore = create<FirebaseProjectState>((set, get) => ({
       if (updates.type !== undefined) firebaseUpdates.type = updates.type;
       if (updates.price !== undefined) firebaseUpdates.price = updates.price;
       if (updates.currency !== undefined) firebaseUpdates.currency = updates.currency;
+      if (updates.surface !== undefined) firebaseUpdates.surface = updates.surface;
+      if (updates.bedrooms !== undefined) firebaseUpdates.bedrooms = updates.bedrooms;
+      if (updates.bathrooms !== undefined) firebaseUpdates.bathrooms = updates.bathrooms;
 
       await projectService.updateProject(id, firebaseUpdates);
       set({ loading: false });

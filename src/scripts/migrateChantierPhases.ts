@@ -170,93 +170,107 @@ export class ChantierMigrationService {
   // Migrer tous les chantiers
   async migrateAllChantiers(): Promise<{ success: number; failed: number }> {
     try {
-      console.log('🚀 Début de la migration de tous les chantiers...');
+      console.log('🚀 Début de la synchronisation des chantiers (Phases & Approvisionnement)...');
 
       const chantiersRef = collection(db, this.COLLECTION_NAME);
       const snapshot = await getDocs(chantiersRef);
 
       const results = { success: 0, failed: 0 };
-      const batch = writeBatch(db);
+
+      // Utiliser des batchs (attention: max 500 opérations par batch)
+      let batch = writeBatch(db);
       let batchSize = 0;
-      const MAX_BATCH_SIZE = 500; // Limite Firestore
 
       for (const chantierDoc of snapshot.docs) {
         const chantierData = chantierDoc.data() as any;
 
-        // Vérifier si déjà migré
-        if (chantierData.migratedToKatosPhases) {
-          console.log(`⏭️ Chantier ${chantierDoc.id} déjà migré, ignoré`);
-          continue;
-        }
-
         try {
-          const chantier = { id: chantierDoc.id, ...chantierData } as LegacyChantier;
+          const chantier = { id: chantierDoc.id, ...chantierData };
+          let phasesChanged = false;
 
-          // Migrer les phases
-          const migratedPhases: KatosChantierPhase[] = [];
+          // 1. S'assurer que les phases sont au format Katos (avec catégories/steps)
+          let currentPhases = chantier.phases?.map(phase => {
+            if (!phase.category) {
+              phasesChanged = true;
+              return this.mapLegacyPhaseToKatos(phase);
+            }
+            return phase;
+          }).filter(p => p !== null) as KatosChantierPhase[];
 
-          chantier.phases?.forEach(legacyPhase => {
-            const migratedPhase = this.mapLegacyPhaseToKatos(legacyPhase);
-            if (migratedPhase) {
-              migratedPhases.push(migratedPhase);
+          // 2. Ajouter les phases Katos manquantes
+          const existingNames = new Set(currentPhases.map(p => p.name));
+          KATOS_STANDARD_PHASES.forEach(template => {
+            if (!existingNames.has(template.name)) {
+              phasesChanged = true;
+              currentPhases.push({
+                ...template,
+                id: uuidv4(),
+                lastUpdated: Timestamp.now(),
+                updatedBy: 'system_sync',
+                steps: template.steps?.map(s => ({ ...s, id: uuidv4() }))
+              } as KatosChantierPhase);
             }
           });
 
-          // Ajouter les phases manquantes
-          const missingPhases = this.addMissingKatosPhases(migratedPhases);
-          const allPhases = [...migratedPhases, ...missingPhases];
-          allPhases.sort((a, b) => a.order - b.order);
-
-          // Recalculer le progrès
-          const globalProgress = calculateGlobalProgress(allPhases);
-          const status = getChantierStatus(allPhases, chantier.plannedEndDate);
-
-          // Mettre à jour les champs lastUpdated et updatedBy pour toutes les phases
-          const updatedPhases = allPhases.map(phase => ({
-            ...phase,
-            lastUpdated: phase.lastUpdated || Timestamp.now(),
-            updatedBy: phase.updatedBy || 'system_migration'
-          }));
-
-          // Ajouter au batch
-          const chantierRef = doc(db, this.COLLECTION_NAME, chantierDoc.id);
-          batch.update(chantierRef, {
-            phases: updatedPhases,
-            globalProgress,
-            status,
-            updatedAt: Timestamp.now(),
-            migratedToKatosPhases: true,
-            migrationDate: Timestamp.now()
+          // 3. Synchroniser l'étape "Approvisionnement" dans chaque phase
+          currentPhases = currentPhases.map(phase => {
+            const template = KATOS_STANDARD_PHASES.find(t => t.name === phase.name);
+            if (template && template.steps) {
+              const supplyTemplate = template.steps.find(s => s.name === 'Approvisionnement');
+              if (supplyTemplate) {
+                const hasSupplyStep = phase.steps?.some(s => s.name === 'Approvisionnement');
+                if (!hasSupplyStep) {
+                  phasesChanged = true;
+                  const newStep = { ...supplyTemplate, id: uuidv4() };
+                  phase.steps = [newStep, ...(phase.steps || [])];
+                }
+              }
+            }
+            return phase;
           });
 
-          batchSize++;
+          if (phasesChanged || !chantierData.migratedToKatosPhases) {
+            // Trier par ordre
+            currentPhases.sort((a, b) => a.order - b.order);
 
-          // Exécuter le batch si on atteint la limite
-          if (batchSize >= MAX_BATCH_SIZE) {
-            await batch.commit();
-            console.log(`📦 Batch de ${batchSize} chantiers traité`);
-            batchSize = 0;
+            // Recalculer le progrès
+            const globalProgress = calculateGlobalProgress(currentPhases);
+            const status = getChantierStatus(currentPhases, chantier.plannedEndDate);
+
+            const chantierRef = doc(db, this.COLLECTION_NAME, chantierDoc.id);
+            batch.update(chantierRef, {
+              phases: currentPhases,
+              globalProgress,
+              status,
+              updatedAt: Timestamp.now(),
+              migratedToKatosPhases: true,
+              migrationDate: Timestamp.now()
+            });
+
+            batchSize++;
+            if (batchSize >= 450) {
+              await batch.commit();
+              batch = writeBatch(db);
+              batchSize = 0;
+            }
+            results.success++;
           }
 
-          results.success++;
-
         } catch (error) {
-          console.error(`❌ Erreur migration chantier ${chantierDoc.id}:`, error);
+          console.error(`❌ Erreur sync chantier ${chantierDoc.id}:`, error);
           results.failed++;
         }
       }
 
-      // Exécuter le dernier batch s'il reste des éléments
       if (batchSize > 0) {
         await batch.commit();
-        console.log(`📦 Dernier batch de ${batchSize} chantiers traité`);
       }
 
-      console.log(`🎉 Migration terminée: ${results.success} réussies, ${results.failed} échouées`);
+      console.log(`🎉 Sync terminée: ${results.success} chantiers mis à jour, ${results.failed} erreurs`);
       return results;
 
     } catch (error) {
-      console.error('❌ Erreur lors de la migration générale:', error);
+      console.error('❌ Erreur lors de la sync générale:', error);
       throw error;
     }
   }
