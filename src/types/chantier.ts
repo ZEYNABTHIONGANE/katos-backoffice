@@ -160,6 +160,15 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     notes: '',
     steps: [
       {
+        id: 'approvisionnement_fondation',
+        name: 'Approvisionnement',
+        description: 'Commande et réception des matériaux pour la fondation',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
+      {
         id: 'implantation',
         name: 'Implantation',
         description: 'Marquage et positionnement des fondations',
@@ -202,6 +211,15 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     notes: '',
     steps: [
       {
+        id: 'approvisionnement_elevation',
+        name: 'Approvisionnement',
+        description: 'Commande et réception des matériaux pour l\'élévation',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
+      {
         id: 'maconnerie',
         name: 'Maçonnerie',
         description: 'Construction des murs en maçonnerie',
@@ -234,6 +252,15 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     photos: [],
     notes: '',
     steps: [
+      {
+        id: 'approvisionnement_coulage',
+        name: 'Approvisionnement',
+        description: 'Commande et réception des matériaux pour le coulage',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 1,
+        notes: ''
+      },
       {
         id: 'coulage_dalle',
         name: 'Coulage dalle',
@@ -273,6 +300,15 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     photos: [],
     notes: '',
     steps: [
+      {
+        id: 'approvisionnement_plomberie',
+        name: 'Approvisionnement',
+        description: 'Commande et réception des matériaux de plomberie',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
       {
         id: 'alimentation',
         name: 'Alimentation',
@@ -316,6 +352,15 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     notes: '',
     steps: [
       {
+        id: 'approvisionnement_electricite',
+        name: 'Approvisionnement',
+        description: 'Commande et réception des matériaux électriques',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
+      {
         id: 'fourretage',
         name: 'Fourretage',
         description: 'Passage des gaines électriques',
@@ -355,7 +400,27 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     requiredMaterials: [],
     estimatedDuration: 6,
     photos: [],
-    notes: ''
+    notes: '',
+    steps: [
+      {
+        id: 'approvisionnement_carrelage',
+        name: 'Approvisionnement',
+        description: 'Commande et réception du carrelage et consommables',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
+      {
+        id: 'pose_carrelage',
+        name: 'Pose carrelage',
+        description: 'Mise en place du carrelage au sol et aux murs',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 4,
+        notes: ''
+      }
+    ]
   },
   {
     name: 'Étanchéité',
@@ -368,7 +433,27 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     requiredMaterials: [],
     estimatedDuration: 3,
     photos: [],
-    notes: ''
+    notes: '',
+    steps: [
+      {
+        id: 'approvisionnement_etancheite',
+        name: 'Approvisionnement',
+        description: 'Commande et réception des produits d\'étanchéité',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 1,
+        notes: ''
+      },
+      {
+        id: 'travaux_etancheite',
+        name: 'Travaux d\'étanchéité',
+        description: 'Application des solutions d\'étanchéité',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      }
+    ]
   },
   {
     name: 'Menuiserie',
@@ -381,7 +466,27 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     requiredMaterials: [],
     estimatedDuration: 5,
     photos: [],
-    notes: ''
+    notes: '',
+    steps: [
+      {
+        id: 'approvisionnement_menuiserie',
+        name: 'Approvisionnement',
+        description: 'Commande et réception des menuiseries',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
+      {
+        id: 'pose_menuiserie',
+        name: 'Pose menuiserie',
+        description: 'Installation des portes et fenêtres',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 3,
+        notes: ''
+      }
+    ]
   },
   {
     name: 'Faux plafond',
@@ -394,7 +499,27 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     requiredMaterials: [],
     estimatedDuration: 4,
     photos: [],
-    notes: ''
+    notes: '',
+    steps: [
+      {
+        id: 'approvisionnement_faux_plafond',
+        name: 'Approvisionnement',
+        description: 'Commande et réception des matériaux de faux plafond',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
+      {
+        id: 'pose_faux_plafond',
+        name: 'Pose faux plafond',
+        description: 'Installation de la structure et des plaques',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      }
+    ]
   },
   {
     name: 'Peinture',
@@ -409,6 +534,15 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
     photos: [],
     notes: '',
     steps: [
+      {
+        id: 'approvisionnement_peinture',
+        name: 'Approvisionnement',
+        description: 'Commande et réception de la peinture et accessoires',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
       {
         id: 'grattage',
         name: 'Grattage',

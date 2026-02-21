@@ -58,6 +58,27 @@ export interface FirebaseProject {
   type: string;
   price: number;
   currency: string;
+  surface?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  createdAt: Timestamp;
+}
+
+export interface FirebaseTerrain {
+  id?: string;
+  reference: string;
+  name: string;
+  surface: number;
+  price: number;
+  currency: string;
+  documentType: string;
+  hasWater: boolean;
+  hasElectricity: boolean;
+  isHabited: boolean;
+  description: string;
+  status: 'Disponible' | 'Vendu' | 'Réservé';
+  zone: string;
+  images: string[];
   createdAt: Timestamp;
 }
 
@@ -84,6 +105,7 @@ export interface FirebaseCollections {
   clientSelections: 'clientSelections';
   invitationCodes: 'invitationCodes';
   documentNotifications: 'documentNotifications';
+  terrains: 'terrains';
 }
 
 // Collection names constant for easy reference
@@ -97,7 +119,8 @@ export const COLLECTIONS: FirebaseCollections = {
   documents: 'documents',
   clientSelections: 'clientSelections',
   invitationCodes: 'invitationCodes',
-  documentNotifications: 'documentNotifications'
+  documentNotifications: 'documentNotifications',
+  terrains: 'terrains'
 };
 
 export interface VoiceNoteFeedback {

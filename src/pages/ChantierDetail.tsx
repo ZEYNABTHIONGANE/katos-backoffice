@@ -1,17 +1,20 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, User, Camera, Users, BarChart3, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, User, Camera, Users, BarChart3, Clock, X } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRealtimeChantier } from '../hooks/useRealtimeChantier';
 import { useUserNames } from '../hooks/useUserNames';
 import { VoiceNoteList } from '../components/chantiers/VoiceNoteList';
+import { ChantierMediaGallery } from '../components/chantiers/ChantierMediaGallery';
 import type { ChantierStatus, KatosChantierPhase, PhaseStep } from '../types/chantier';
 
 export const ChantierDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isMediaGalleryOpen, setIsMediaGalleryOpen] = React.useState(false);
+  const [selectedMedia, setSelectedMedia] = React.useState<any | null>(null);
 
   const {
     chantier,
@@ -113,7 +116,7 @@ export const ChantierDetail: React.FC = () => {
     }
 
     return (
-      <div key={photo.id} className="relative group cursor-pointer" onClick={() => window.open(photo.url, '_blank')}>
+      <div key={photo.id} className="relative group cursor-pointer" onClick={() => setSelectedMedia({ ...photo, mediaType: isVideo ? 'video' : 'image' })}>
         {isVideo && useVideoTag ? (
           <video
             src={`${photo.url}#t=0.5`}
@@ -283,7 +286,8 @@ export const ChantierDetail: React.FC = () => {
 
         <motion.div
           whileHover={{ y: -5, transition: { duration: 0.2 } }}
-          className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-purple-100 group transition-shadow hover:shadow-md"
+          onClick={() => setIsMediaGalleryOpen(true)}
+          className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-purple-100 group transition-shadow hover:shadow-md cursor-pointer"
         >
           <div className="flex flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
@@ -505,6 +509,61 @@ export const ChantierDetail: React.FC = () => {
           </div>
         </Card>
       )}
+
+      <ChantierMediaGallery
+        isOpen={isMediaGalleryOpen}
+        onClose={() => setIsMediaGalleryOpen(false)}
+        chantierId={chantier.id || ''}
+        gallery={chantier.gallery}
+        chantierName={chantier.name}
+      />
+
+      {/* Visionneuse plein écran */}
+      <AnimatePresence>
+        {selectedMedia && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 md:p-10"
+          >
+            <button
+              onClick={() => setSelectedMedia(null)}
+              className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors"
+            >
+              <X size={32} />
+            </button>
+
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-5xl w-full max-h-full flex flex-col items-center"
+            >
+              {selectedMedia.mediaType === 'image' && (
+                <img
+                  src={selectedMedia.url}
+                  alt={selectedMedia.description}
+                  className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                />
+              )}
+              {selectedMedia.mediaType === 'video' && (
+                <video
+                  src={selectedMedia.url}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-[80vh] rounded-lg shadow-2xl"
+                />
+              )}
+              {selectedMedia.description && (
+                <p className="text-white mt-6 text-lg font-medium bg-white/10 px-6 py-2 rounded-full backdrop-blur-md">
+                  {selectedMedia.description}
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
