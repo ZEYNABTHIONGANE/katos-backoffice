@@ -22,6 +22,10 @@ export interface Client {
   tempPassword?: string;
   // Facturation
   typePaiement: 'comptant' | 'echeancier';
+  budgetEstimé?: string;
+  terrainSurface?: string;
+  terrainLocation?: string;
+  hasTitreFoncier?: boolean;
   createdAt: string;
   invitedAt?: string;
   acceptedAt?: string;

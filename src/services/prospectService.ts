@@ -19,6 +19,12 @@ export interface FirebaseProspect {
     phone: string;
     email: string;
     project?: string;
+    type?: 'Standard' | 'Custom' | 'Meeting';
+    terrainLocation?: string;
+    terrainSurface?: string;
+    hasTitreFoncier?: boolean;
+    budget?: string;
+    description?: string;
     status: 'pending' | 'validated' | 'rejected';
     createdAt: Timestamp;
 }

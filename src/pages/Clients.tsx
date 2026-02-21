@@ -53,6 +53,10 @@ export const Clients: React.FC = () => {
     userId: client.userId,
     username: client.username,
     tempPassword: client.tempPassword,
+    budgetEstimé: client.budgetEstimé,
+    terrainSurface: client.terrainSurface,
+    terrainLocation: client.terrainLocation,
+    hasTitreFoncier: client.hasTitreFoncier,
     createdAt: Timestamp.fromDate(new Date(client.createdAt)),
     invitedAt: client.invitedAt ? Timestamp.fromDate(new Date(client.invitedAt)) : undefined,
     acceptedAt: client.acceptedAt ? Timestamp.fromDate(new Date(client.acceptedAt)) : undefined
@@ -205,7 +209,7 @@ export const Clients: React.FC = () => {
                     Contact
                   </th>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Projet
+                    Budget
                   </th>
                   <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Statut
@@ -247,11 +251,20 @@ export const Clients: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <div>
-                        <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                          {client.projetAdhere}
+                      <button
+                        onClick={() => {
+                          setViewingClient(client);
+                          setIsDetailsModalOpen(true);
+                        }}
+                        className="text-left hover:opacity-80 transition-opacity"
+                      >
+                        <div className="text-xs sm:text-sm font-bold text-blue-600">
+                          {client.budgetEstimé ? `${client.budgetEstimé} FCFA` : '-'}
                         </div>
-                      </div>
+                        <div className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                          Budget Estimé
+                        </div>
+                      </button>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                       <div className="flex flex-col gap-1">

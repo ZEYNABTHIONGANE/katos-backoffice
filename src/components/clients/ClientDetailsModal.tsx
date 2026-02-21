@@ -47,6 +47,10 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
     username: client.username,
     tempPassword: client.tempPassword,
     typePaiement: client.typePaiement,
+    budgetEstimé: client.budgetEstimé,
+    terrainSurface: client.terrainSurface,
+    terrainLocation: client.terrainLocation,
+    hasTitreFoncier: client.hasTitreFoncier,
     createdAt: Timestamp.fromDate(new Date(client.createdAt)),
     invitedAt: client.invitedAt ? Timestamp.fromDate(new Date(client.invitedAt)) : undefined,
     acceptedAt: client.acceptedAt ? Timestamp.fromDate(new Date(client.acceptedAt)) : undefined
@@ -174,6 +178,37 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
                       {client.status}
                     </span>
                   </div>
+
+                  {client.budgetEstimé && (
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                      <div className="text-sm font-bold text-blue-900 mb-1">Budget Estimé</div>
+                      <div className="text-lg font-bold text-blue-700">{client.budgetEstimé} FCFA</div>
+                    </div>
+                  )}
+
+                  {(client.terrainSurface || client.terrainLocation) && (
+                    <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                      <div className="text-sm font-medium text-gray-900 border-b pb-1 mb-2">Détails du Terrain</div>
+                      {client.terrainLocation && (
+                        <div className="flex justify-between text-xs sm:text-sm">
+                          <span className="text-gray-500">Localisation:</span>
+                          <span className="font-medium text-gray-900">{client.terrainLocation}</span>
+                        </div>
+                      )}
+                      {client.terrainSurface && (
+                        <div className="flex justify-between text-xs sm:text-sm">
+                          <span className="text-gray-500">Surface:</span>
+                          <span className="font-medium text-gray-900">{client.terrainSurface} m²</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-gray-500">Titre Foncier:</span>
+                        <span className={`font-bold ${client.hasTitreFoncier ? 'text-green-600' : 'text-red-500'}`}>
+                          {client.hasTitreFoncier ? 'OUI' : 'NON'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -29,6 +29,10 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     projetAdhere: string;
     typePaiement: 'comptant' | 'echeancier';
     status: 'En cours' | 'Terminé' | 'En attente';
+    budgetEstimé: string;
+    terrainSurface: string;
+    terrainLocation: string;
+    hasTitreFoncier: boolean;
   }>({
     nom: '',
     prenom: '',
@@ -39,6 +43,10 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     projetAdhere: '',
     typePaiement: 'comptant',
     status: 'En attente',
+    budgetEstimé: '',
+    terrainSurface: '',
+    terrainLocation: '',
+    hasTitreFoncier: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,6 +64,10 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         projetAdhere: client.projetAdhere || '',
         typePaiement: client.typePaiement || 'comptant',
         status: client.status || 'En attente',
+        budgetEstimé: client.budgetEstimé || '',
+        terrainSurface: client.terrainSurface || '',
+        terrainLocation: client.terrainLocation || '',
+        hasTitreFoncier: !!client.hasTitreFoncier,
       });
     } else {
       setFormData({
@@ -68,6 +80,10 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         projetAdhere: '',
         typePaiement: 'comptant',
         status: 'En attente',
+        budgetEstimé: '',
+        terrainSurface: '',
+        terrainLocation: '',
+        hasTitreFoncier: false,
       });
     }
     setErrors({});
@@ -113,6 +129,10 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       projetAdhere: '',
       typePaiement: 'comptant',
       status: 'En attente',
+      budgetEstimé: '',
+      terrainSurface: '',
+      terrainLocation: '',
+      hasTitreFoncier: false,
     });
     setErrors({});
     onClose();
@@ -263,6 +283,45 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               <option value="En cours">En cours</option>
               <option value="Terminé">Terminé</option>
             </select>
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg space-y-4 border border-gray-200">
+            <h4 className="text-sm font-bold text-gray-900 border-b pb-2">Détails Techniques (du Prospect)</h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Budget Estimé (FCFA)"
+                value={formData.budgetEstimé}
+                onChange={(e) => setFormData({ ...formData, budgetEstimé: e.target.value })}
+                placeholder="15 000 000"
+              />
+              <Input
+                label="Surface Terrain (m²)"
+                value={formData.terrainSurface}
+                onChange={(e) => setFormData({ ...formData, terrainSurface: e.target.value })}
+                placeholder="200"
+              />
+            </div>
+
+            <Input
+              label="Localisation Terrain"
+              value={formData.terrainLocation}
+              onChange={(e) => setFormData({ ...formData, terrainLocation: e.target.value })}
+              placeholder="Diamniadio, Lot 5"
+            />
+
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="hasTitreFoncier"
+                checked={formData.hasTitreFoncier}
+                onChange={(e) => setFormData({ ...formData, hasTitreFoncier: e.target.checked })}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <label htmlFor="hasTitreFoncier" className="text-sm font-medium text-gray-700">
+                Détient un Titre Foncier
+              </label>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-200">

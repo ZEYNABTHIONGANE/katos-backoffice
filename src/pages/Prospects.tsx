@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Trash2, CheckCircle, XCircle, Clock, Filter, UserPlus, Users } from 'lucide-react';
+import { Mail, Phone, Trash2, CheckCircle, XCircle, Clock, Filter, UserPlus, Users, Eye, X, MapPin, Ruler, FileText, Banknote } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { prospectService } from '../services/prospectService';
 import type { FirebaseProspect } from '../services/prospectService';
@@ -15,6 +16,8 @@ export const Prospects: React.FC = () => {
     const [prospects, setProspects] = useState<FirebaseProspect[]>([]);
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'validated' | 'rejected'>('all');
     const [loading, setLoading] = useState(true);
+    const [selectedProspect, setSelectedProspect] = useState<FirebaseProspect | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
 
     useEffect(() => {
@@ -60,7 +63,11 @@ export const Prospects: React.FC = () => {
                         status: 'En attente',
                         isActive: true,
                         invitationStatus: 'pending',
-                        typePaiement: 'echeancier'
+                        typePaiement: 'echeancier',
+                        budgetEstimé: prospect.budget,
+                        terrainSurface: prospect.terrainSurface,
+                        terrainLocation: prospect.terrainLocation,
+                        hasTitreFoncier: prospect.hasTitreFoncier
                     });
 
                     // 2. Create client account (Auth + Firestore User)
@@ -106,6 +113,20 @@ export const Prospects: React.FC = () => {
                 type: 'info'
             }
         );
+    };
+
+    const handleViewDetails = (prospect: FirebaseProspect) => {
+        setSelectedProspect(prospect);
+        setIsDetailModalOpen(true);
+    };
+
+    const getTypeLabel = (type?: string) => {
+        switch (type) {
+            case 'Standard': return 'Modèle Catalogue';
+            case 'Custom': return 'Projet Personnalisé';
+            case 'Meeting': return 'Rendez-vous Conseil';
+            default: return 'Non spécifié';
+        }
     };
 
     const filteredProspects = prospects.filter(p => {
@@ -164,6 +185,7 @@ export const Prospects: React.FC = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projet souhaité</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
@@ -189,25 +211,39 @@ export const Prospects: React.FC = () => {
                                             {prospect.createdAt?.toDate ? prospect.createdAt.toDate().toLocaleDateString() : 'N/A'}
                                         </td>
                                         <td className="px-6 py-4">
+                                            <div className="text-sm font-semibold text-gray-900">{prospect.budget ? `${prospect.budget} FCFA` : '-'}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
                                             {getStatusBadge(prospect.status)}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex space-x-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleViewDetails(prospect)}
+                                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                    title="Voir les détails"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Button>
                                                 {prospect.status === 'pending' && (
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => handleValidate(prospect)}
                                                         className="bg-green-50 text-green-600 hover:bg-green-100 border-green-200"
+                                                        title="Convertir en client"
                                                     >
-                                                        <UserPlus className="w-4 h-4 mr-1" /> Valider
+                                                        <UserPlus className="w-4 h-4" />
                                                     </Button>
                                                 )}
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => handleDelete(prospect)}
-                                                    className="text-red-500 hover:text-red-700"
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    title="Supprimer"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
@@ -226,6 +262,117 @@ export const Prospects: React.FC = () => {
                     </div>
                 )}
             </Card>
+
+            <Modal
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                title="Détails du Prospect"
+                size="lg"
+            >
+                {selectedProspect && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-start border-b pb-4">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">{selectedProspect.firstName} {selectedProspect.lastName}</h2>
+                                <p className="text-sm text-gray-500">Demande reçue le {selectedProspect.createdAt?.toDate ? selectedProspect.createdAt.toDate().toLocaleString() : 'N/A'}</p>
+                            </div>
+                            {getStatusBadge(selectedProspect.status)}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Contact Info */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center">
+                                    <Users className="w-4 h-4 mr-2 text-indigo-500" /> Informations Personnelles
+                                </h3>
+                                <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                                    <div className="flex items-center text-sm">
+                                        <Mail className="w-4 h-4 mr-3 text-gray-400" />
+                                        <span className="text-gray-900 font-medium">{selectedProspect.email}</span>
+                                    </div>
+                                    <div className="flex items-center text-sm">
+                                        <Phone className="w-4 h-4 mr-3 text-gray-400" />
+                                        <span className="text-gray-900 font-medium">{selectedProspect.phone}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Project Info */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center">
+                                    <FileText className="w-4 h-4 mr-2 text-indigo-500" /> Type de Projet
+                                </h3>
+                                <div className="bg-indigo-50 p-4 rounded-lg">
+                                    <div className="text-indigo-900 font-bold">{getTypeLabel(selectedProspect.type)}</div>
+                                    <div className="text-sm text-indigo-700 mt-1">{selectedProspect.project || 'Aucun modèle spécifique'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Technical Details */}
+                        {selectedProspect.type !== 'Meeting' && (
+                            <div className="space-y-4 border-t pt-6">
+                                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center">
+                                    <MapPin className="w-4 h-4 mr-2 text-indigo-500" /> Détails du Terrain & Budget
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="bg-white border rounded-lg p-3">
+                                        <div className="text-xs text-gray-500 mb-1 flex items-center">
+                                            <MapPin className="w-3 h-3 mr-1" /> Localisation
+                                        </div>
+                                        <div className="text-sm font-semibold text-gray-900">{selectedProspect.terrainLocation || '-'}</div>
+                                    </div>
+                                    <div className="bg-white border rounded-lg p-3">
+                                        <div className="text-xs text-gray-500 mb-1 flex items-center">
+                                            <Ruler className="w-3 h-3 mr-1" /> Surface
+                                        </div>
+                                        <div className="text-sm font-semibold text-gray-900">{selectedProspect.terrainSurface ? `${selectedProspect.terrainSurface} m²` : '-'}</div>
+                                    </div>
+                                    <div className="bg-white border rounded-lg p-3">
+                                        <div className="text-xs text-gray-500 mb-1 flex items-center">
+                                            <Banknote className="w-3 h-3 mr-1" /> Budget prévisionnel
+                                        </div>
+                                        <div className="text-sm font-semibold text-gray-900">{selectedProspect.budget ? `${selectedProspect.budget} FCFA` : 'Non spécifié'}</div>
+                                    </div>
+                                </div>
+                                <div className="bg-blue-50 p-3 rounded-lg flex items-center">
+                                    <div className={`w-3 h-3 rounded-full mr-2 ${selectedProspect.hasTitreFoncier ? 'bg-green-500' : 'bg-red-500'}`} />
+                                    <span className="text-xs font-medium text-gray-700">
+                                        Détenteur d'un Titre Foncier : <span className="font-bold">{selectedProspect.hasTitreFoncier ? 'OUI' : 'NON / EN COURS'}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Description */}
+                        {selectedProspect.description && (
+                            <div className="space-y-4 border-t pt-6">
+                                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center">
+                                    <FileText className="w-4 h-4 mr-2 text-indigo-500" /> Notes / Besoins spécifiques
+                                </h3>
+                                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                    {selectedProspect.description}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end pt-6 border-t space-x-3">
+                            <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Fermer</Button>
+                            {selectedProspect.status === 'pending' && (
+                                <Button
+                                    onClick={() => {
+                                        setIsDetailModalOpen(false);
+                                        handleValidate(selectedProspect);
+                                    }}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                    Valider & Créer Compte
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </Modal>
 
             <ConfirmModal
                 isOpen={confirmState.isOpen}

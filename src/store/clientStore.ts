@@ -24,6 +24,10 @@ interface ClientForApp {
   createdAt: string;
   invitedAt?: string;
   acceptedAt?: string;
+  budgetEstimé?: string;
+  terrainSurface?: string;
+  terrainLocation?: string;
+  hasTitreFoncier?: boolean;
 }
 
 interface FirebaseClientState {
@@ -87,7 +91,11 @@ const convertFirebaseClient = (firebaseClient: FirebaseClient): ClientForApp => 
       typePaiement: firebaseClient.typePaiement || 'comptant',
       createdAt: firebaseClient.createdAt?.toDate?.()?.toISOString?.()?.split?.('T')?.[0] || new Date().toISOString().split('T')[0],
       invitedAt: firebaseClient.invitedAt?.toDate?.()?.toISOString?.()?.split?.('T')?.[0] || undefined,
-      acceptedAt: firebaseClient.acceptedAt?.toDate?.()?.toISOString?.()?.split?.('T')?.[0] || undefined
+      acceptedAt: firebaseClient.acceptedAt?.toDate?.()?.toISOString?.()?.split?.('T')?.[0] || undefined,
+      budgetEstimé: firebaseClient.budgetEstimé || '',
+      terrainSurface: firebaseClient.terrainSurface || '',
+      terrainLocation: firebaseClient.terrainLocation || '',
+      hasTitreFoncier: !!firebaseClient.hasTitreFoncier
     };
   } catch (error) {
     console.error(`❌ Erreur lors de la conversion finale du client ${firebaseClient.id}:`, error);
@@ -111,7 +119,11 @@ const convertFirebaseClient = (firebaseClient: FirebaseClient): ClientForApp => 
       typePaiement: 'comptant' as const,
       createdAt: new Date().toISOString().split('T')[0],
       invitedAt: undefined,
-      acceptedAt: undefined
+      acceptedAt: undefined,
+      budgetEstimé: '',
+      terrainSurface: '',
+      terrainLocation: '',
+      hasTitreFoncier: false
     };
   }
 };
@@ -153,6 +165,18 @@ const convertToFirebaseClient = (client: Omit<ClientForApp, 'id' | 'createdAt'>)
     }
     if (client.acceptedAt) {
       firebaseClient.acceptedAt = Timestamp.fromDate(new Date(client.acceptedAt));
+    }
+    if (client.budgetEstimé) {
+      firebaseClient.budgetEstimé = client.budgetEstimé;
+    }
+    if (client.terrainSurface) {
+      firebaseClient.terrainSurface = client.terrainSurface;
+    }
+    if (client.terrainLocation) {
+      firebaseClient.terrainLocation = client.terrainLocation;
+    }
+    if (client.hasTitreFoncier !== undefined) {
+      firebaseClient.hasTitreFoncier = client.hasTitreFoncier;
     }
 
     console.log('✅ Conversion vers Firebase réussie:', firebaseClient);
@@ -230,6 +254,10 @@ export const useClientStore = create<FirebaseClientState>((set, get) => ({
       if (updates.username) firebaseUpdates.username = updates.username;
       if (updates.tempPassword) firebaseUpdates.tempPassword = updates.tempPassword;
       if (updates.typePaiement) firebaseUpdates.typePaiement = updates.typePaiement;
+      if (updates.budgetEstimé) firebaseUpdates.budgetEstimé = updates.budgetEstimé;
+      if (updates.terrainSurface) firebaseUpdates.terrainSurface = updates.terrainSurface;
+      if (updates.terrainLocation) firebaseUpdates.terrainLocation = updates.terrainLocation;
+      if (updates.hasTitreFoncier !== undefined) firebaseUpdates.hasTitreFoncier = updates.hasTitreFoncier;
 
       await clientService.updateClient(id, firebaseUpdates);
       set({ loading: false });
