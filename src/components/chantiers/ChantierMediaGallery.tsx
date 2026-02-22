@@ -166,27 +166,19 @@ export const ChantierMediaGallery: React.FC<ChantierMediaGalleryProps> = ({
 
                                     {item.mediaType === 'video' && (
                                         <div className="w-full h-full relative cursor-pointer group/video" onClick={() => setSelectedMedia(item)}>
-                                            <img
-                                                src={item.thumbnailUrl}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                                alt="Video preview"
-                                                onError={(e) => {
-                                                    // Fallback if Cloudinary thumb fails
-                                                    (e.target as HTMLImageElement).style.display = 'none';
-                                                }}
-                                            />
                                             <video
-                                                src={`${item.url}#t=0.5`}
-                                                className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover/video:opacity-100 transition-opacity duration-300"
+                                                src={`${item.url}#t=0.1`}
+                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/video:scale-110"
                                                 muted
                                                 playsInline
+                                                preload="metadata"
                                             />
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-opacity-40 transition-all">
-                                                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xl">
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/video:bg-black/40 transition-all z-10">
+                                                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover/video:scale-110 transition-transform shadow-xl">
                                                     <Play size={20} className="text-white fill-white ml-1" />
                                                 </div>
                                             </div>
-                                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-blue-600/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider">
+                                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-blue-600/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider z-20">
                                                 Vidéo
                                             </div>
                                         </div>

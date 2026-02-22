@@ -15,6 +15,18 @@ export class StorageService {
   }
 
   /**
+   * Upload une vidéo vers Cloudinary
+   */
+  async uploadVideo(file: File): Promise<string> {
+    try {
+      return cloudinaryService.uploadFile(file, 'video');
+    } catch (error: any) {
+      console.error('Erreur upload vidéo vers Cloudinary:', error);
+      throw new Error(error.message || 'Erreur lors de l\'upload de la vidéo');
+    }
+  }
+
+  /**
    * Compatibilité - méthode pour matériaux
    */
   async uploadMaterialImage(file: File, materialId?: string): Promise<string> {
@@ -41,6 +53,24 @@ export class StorageService {
 
     if (file.size > maxSize) {
       throw new Error('L\'image est trop volumineuse. Maximum 5MB.');
+    }
+
+    return true;
+  }
+
+  /**
+   * Valider le type de fichier vidéo
+   */
+  validateVideoFile(file: File): boolean {
+    const allowedTypes = ['video/mp4', 'video/quicktime', 'video/webm'];
+    const maxSize = 50 * 1024 * 1024; // 50MB
+
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Format de vidéo non supporté. Utilisez MP4 ou WebM.');
+    }
+
+    if (file.size > maxSize) {
+      throw new Error('La vidéo est trop volumineuse. Maximum 50MB.');
     }
 
     return true;

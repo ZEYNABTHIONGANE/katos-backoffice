@@ -14,6 +14,13 @@ export interface ShowcaseContent {
         subtitle: string;
     };
     featuredVillas: string[]; // IDs des projets (villas) mis en avant
+    carousel?: {
+        id: string;
+        title: string;
+        tagline: string;
+        image: string;
+        type?: 'image' | 'video';
+    }[];
     updatedAt: any;
 }
 

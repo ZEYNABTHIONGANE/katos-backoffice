@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { Button } from './Button';
 import { storageService } from '../../services/storageService';
 
-interface SingleImageUploaderProps {
+interface SingleMediaUploaderProps {
     value: string;
-    onChange: (url: string) => void;
+    mediaType?: 'image' | 'video';
+    onChange: (url: string, type: 'image' | 'video') => void;
     label?: string;
     error?: string;
     aspectRatio?: 'square' | 'video' | 'portrait' | 'any';
 }
 
-export const SingleImageUploader: React.FC<SingleImageUploaderProps> = ({
+export const SingleMediaUploader: React.FC<SingleMediaUploaderProps> = ({
     value,
+    mediaType = 'image',
     onChange,
-    label = "Image",
+    label = "Media",
     error,
     aspectRatio = 'video'
 }) => {
@@ -27,9 +29,16 @@ export const SingleImageUploader: React.FC<SingleImageUploaderProps> = ({
         setUploading(true);
 
         try {
-            storageService.validateImageFile(file);
-            const url = await storageService.uploadImage(file);
-            onChange(url);
+            const isVideo = file.type.startsWith('video/');
+            if (isVideo) {
+                storageService.validateVideoFile(file);
+                const url = await storageService.uploadVideo(file);
+                onChange(url, 'video');
+            } else {
+                storageService.validateImageFile(file);
+                const url = await storageService.uploadImage(file);
+                onChange(url, 'image');
+            }
         } catch (error: any) {
             alert(error.message || 'Erreur lors de l\'upload');
         } finally {
@@ -38,8 +47,8 @@ export const SingleImageUploader: React.FC<SingleImageUploaderProps> = ({
         }
     };
 
-    const removeImage = () => {
-        onChange('');
+    const removeMedia = () => {
+        onChange('', 'image');
     };
 
     const getAspectClass = () => {
@@ -61,23 +70,34 @@ export const SingleImageUploader: React.FC<SingleImageUploaderProps> = ({
 
             {value ? (
                 <div className={`relative border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50 ${getAspectClass()}`}>
-                    <img
-                        src={value}
-                        alt="Uploaded"
-                        className="w-full h-full object-cover"
-                    />
+                    {mediaType === 'video' ? (
+                        <video
+                            src={value}
+                            className="w-full h-full object-cover"
+                            controls
+                            muted
+                            loop
+                            playsInline
+                        />
+                    ) : (
+                        <img
+                            src={value}
+                            alt="Uploaded"
+                            className="w-full h-full object-cover"
+                        />
+                    )}
                     <div className="absolute top-2 right-2 flex gap-2">
                         <label className="cursor-pointer shadow-sm">
-                            <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} disabled={uploading} />
+                            <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileSelect} disabled={uploading} />
                             <div className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium border border-gray-200 transition-colors">
                                 {uploading ? 'Upload...' : 'Changer'}
                             </div>
                         </label>
                         <button
                             type="button"
-                            onClick={removeImage}
+                            onClick={removeMedia}
                             className="p-1.5 bg-white/90 backdrop-blur-sm hover:bg-red-50 text-red-600 border border-gray-200 hover:border-red-200 rounded-md shadow-sm transition-colors"
-                            title="Supprimer l'image"
+                            title="Supprimer le média"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -85,7 +105,7 @@ export const SingleImageUploader: React.FC<SingleImageUploaderProps> = ({
                 </div>
             ) : (
                 <label className={`flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors ${getAspectClass()}`}>
-                    <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} disabled={uploading} />
+                    <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileSelect} disabled={uploading} />
                     {uploading ? (
                         <div className="flex flex-col items-center">
                             <Upload className="w-8 h-8 text-primary-600 animate-bounce mb-2" />
@@ -93,9 +113,12 @@ export const SingleImageUploader: React.FC<SingleImageUploaderProps> = ({
                         </div>
                     ) : (
                         <>
-                            <ImageIcon className="w-10 h-10 text-gray-400 mb-2" />
+                            <div className="flex gap-2 mb-2">
+                                <ImageIcon className="w-8 h-8 text-gray-400" />
+                                <VideoIcon className="w-8 h-8 text-gray-400" />
+                            </div>
                             <p className="text-sm text-gray-600 font-medium">Cliquer pour envoyer</p>
-                            <p className="text-xs text-gray-400">JPG, PNG ou WebP (max 5MB)</p>
+                            <p className="text-xs text-gray-400">JPG, PNG, WebP ou MP4 (max 50MB)</p>
                         </>
                     )}
                 </label>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { Layout, Save, Image as ImageIcon, Star, Tag, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Layout, Save, Image as ImageIcon, Star, Tag, CheckCircle2, AlertCircle, Plus, Trash2, GripVertical } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { SingleImageUploader } from '../components/ui/SingleImageUploader';
+import { SingleMediaUploader } from '../components/ui/SingleMediaUploader';
 import { showcaseService } from '../services/showcaseService';
 import type { ShowcaseContent } from '../services/showcaseService';
 import { useProjectStore } from '../store/projectStore';
@@ -26,6 +27,26 @@ export const Showcase: React.FC = () => {
             subtitle: '-10% sur les frais de dossier ce mois-ci',
         },
         featuredVillas: [],
+        carousel: [
+            {
+                id: '1',
+                title: "Des villas d'exception au Sénégal",
+                tagline: "Construisons l'avenir ensemble",
+                image: 'https://images.unsplash.com/photo-1600585154340-be6199f7d009?q=80&w=2070&auto=format&fit=crop',
+            },
+            {
+                id: '2',
+                title: "Simulation gratuite en 2 minutes",
+                tagline: "Planifiez votre budget",
+                image: 'https://images.unsplash.com/photo-1541888086414-b80c33fb3537?q=80&w=2070&auto=format&fit=crop',
+            },
+            {
+                id: '3',
+                title: "Un expert BTP à votre écoute",
+                tagline: "Conseils techniques gratuits",
+                image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=2070&auto=format&fit=crop',
+            }
+        ],
         updatedAt: null,
     });
 
@@ -71,6 +92,37 @@ export const Showcase: React.FC = () => {
         });
     };
 
+    const addCarouselItem = () => {
+        setContent(prev => ({
+            ...prev,
+            carousel: [
+                ...(prev.carousel || []),
+                {
+                    id: Date.now().toString(),
+                    title: 'Nouvelle bannière',
+                    tagline: 'Sous-titre',
+                    image: ''
+                }
+            ]
+        }));
+    };
+
+    const updateCarouselItem = (id: string, updates: any) => {
+        setContent(prev => ({
+            ...prev,
+            carousel: (prev.carousel || []).map(item =>
+                item.id === id ? { ...item, ...updates } : item
+            )
+        }));
+    };
+
+    const removeCarouselItem = (id: string) => {
+        setContent(prev => ({
+            ...prev,
+            carousel: (prev.carousel || []).filter(item => item.id !== id)
+        }));
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -93,65 +145,65 @@ export const Showcase: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Hero Section */}
+                {/* Carousel Section */}
                 <Card className="p-6 space-y-4">
-                    <div className="flex items-center gap-2 border-b pb-4 mb-4">
-                        <Layout className="w-5 h-5 text-primary-600" />
-                        <h2 className="text-lg font-semibold">Section Hero (Projet Phare)</h2>
+                    <div className="flex items-center justify-between border-b pb-4 mb-4">
+                        <div className="flex items-center gap-2">
+                            <Layout className="w-5 h-5 text-primary-600" />
+                            <h2 className="text-lg font-semibold">Bannières du Carousel</h2>
+                        </div>
+                        <Button size="sm" onClick={addCarouselItem}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Ajouter
+                        </Button>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">Projet Phare (Titre)</label>
-                            <select
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 bg-white"
-                                value={content.heroProject.title}
-                                onChange={(e) => {
-                                    setContent({
-                                        ...content,
-                                        heroProject: {
-                                            ...content.heroProject,
-                                            title: e.target.value,
-                                            // Optional: auto-fill description if empty? 
-                                            // For now just keep it as is but use the select
-                                        }
-                                    });
-                                }}
-                            >
-                                <option value="">Sélectionnez un projet</option>
-                                {projects.map(p => (
-                                    <option key={p.id} value={p.name}>{p.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <Input
-                            label="Sous-titre"
-                            value={content.heroProject.subtitle}
-                            onChange={(e) => setContent({
-                                ...content,
-                                heroProject: { ...content.heroProject, subtitle: e.target.value }
-                            })}
-                        />
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-700">Description</label>
-                            <textarea
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 min-h-[100px]"
-                                value={content.heroProject.description}
-                                onChange={(e) => setContent({
-                                    ...content,
-                                    heroProject: { ...content.heroProject, description: e.target.value }
-                                })}
-                            />
-                        </div>
-                        <SingleImageUploader
-                            label="Image du Projet Phare"
-                            value={content.heroProject.imageUrl}
-                            onChange={(url) => setContent({
-                                ...content,
-                                heroProject: { ...content.heroProject, imageUrl: url }
-                            })}
-                            aspectRatio="video"
-                        />
+                    <div className="space-y-6">
+                        {(content.carousel || []).map((slide, index) => (
+                            <div key={slide.id} className="p-4 border border-gray-200 rounded-lg relative bg-gray-50">
+                                <div className="absolute top-2 right-2 flex gap-2">
+                                    <button
+                                        onClick={() => removeCarouselItem(slide.id)}
+                                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                        title="Supprimer cette bannière"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="flex items-start gap-4 mb-4">
+                                    <h3 className="text-xs font-semibold uppercase text-gray-400">Slide {index + 1}</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Input
+                                            label="Accroche (Tagline)"
+                                            value={slide.tagline}
+                                            onChange={(e) => updateCarouselItem(slide.id, { tagline: e.target.value })}
+                                            placeholder="Ex: Planifiez votre budget"
+                                        />
+                                        <Input
+                                            label="Titre principal"
+                                            value={slide.title}
+                                            onChange={(e) => updateCarouselItem(slide.id, { title: e.target.value })}
+                                            placeholder="Ex: Des villas d'exception"
+                                        />
+                                    </div>
+                                    <SingleMediaUploader
+                                        label="Média de fond (Image ou Vidéo)"
+                                        value={slide.image}
+                                        mediaType={slide.type as any || 'image'}
+                                        onChange={(url, type) => updateCarouselItem(slide.id, { image: url, type })}
+                                        aspectRatio="video"
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        {(!content.carousel || content.carousel.length === 0) && (
+                            <div className="text-center py-6 text-gray-500 text-sm">
+                                <AlertCircle className="w-6 h-6 mx-auto mb-2 opacity-20" />
+                                Aucune bannière ajoutée.
+                            </div>
+                        )}
                     </div>
                 </Card>
 
