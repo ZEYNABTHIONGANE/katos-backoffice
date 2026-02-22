@@ -191,7 +191,7 @@ export const Showcase: React.FC = () => {
                                     <SingleMediaUploader
                                         label="Média de fond (Image ou Vidéo)"
                                         value={slide.image}
-                                        mediaType={slide.type as any || 'image'}
+                                        mediaType={slide.type || (/\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(slide.image || '') ? 'video' : 'image')}
                                         onChange={(url, type) => updateCarouselItem(slide.id, { image: url, type })}
                                         aspectRatio="video"
                                     />
