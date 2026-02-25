@@ -57,7 +57,7 @@ export const Register: React.FC = () => {
       // D'abord valider le code d'invitation AVANT de créer le compte
       const validation = await invitationService.validateAndUseCode(invitationCode, 'temp');
 
-      if (!validation.valid) {
+      if (!validation.valid || !validation.codeId) {
         toast.error(validation.error || 'Code d\'invitation invalide');
         setLoading(false);
         return;
@@ -72,12 +72,7 @@ export const Register: React.FC = () => {
       );
 
       // Mettre à jour le code avec le vrai UID utilisateur
-      // On trouve le code et on met à jour le usedBy avec le vrai UID
-      const codes = await invitationService.getAllInvitationCodes();
-      const usedCode = codes.find(c => c.code === invitationCode && c.status === 'used');
-      if (usedCode && usedCode.id) {
-        await invitationService.updateCodeUsedBy(usedCode.id, user.uid);
-      }
+      await invitationService.updateCodeUsedBy(validation.codeId, user.uid);
 
       toast.success('Inscription réussie ! Vous pouvez maintenant vous connecter.');
 

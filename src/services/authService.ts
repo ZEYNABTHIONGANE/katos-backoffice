@@ -62,7 +62,40 @@ export class AuthService {
 
   async getUserData(uid: string): Promise<FirebaseUser | null> {
     const userDoc = await getDoc(doc(db, 'users', uid));
-    return userDoc.exists() ? userDoc.data() as FirebaseUser : null;
+    const authEmail = auth.currentUser?.email;
+
+    if (userDoc.exists()) {
+      const data = userDoc.data() as FirebaseUser;
+
+      // Auto-fix for the newly updated super admin email
+      // We check both data.email and auth.currentUser.email in case Firestore wasn't updated
+      if ((data.email === 'superadmin@katos.com' || authEmail === 'superadmin@katos.com') && data.role !== UserRole.SUPER_ADMIN) {
+        data.role = UserRole.SUPER_ADMIN;
+        data.email = 'superadmin@katos.com';
+        // Update it in Firestore in the background
+        setDoc(doc(db, 'users', uid), {
+          role: UserRole.SUPER_ADMIN,
+          email: 'superadmin@katos.com'
+        }, { merge: true }).catch(console.error);
+      }
+      return data;
+    }
+
+    // Auto-create document for superadmin if they logged in but have no Firestore document (manual creation in console)
+    if (authEmail === 'superadmin@katos.com') {
+      const superAdminData: FirebaseUser = {
+        uid: uid,
+        email: 'superadmin@katos.com',
+        displayName: 'Super Administrateur',
+        role: UserRole.SUPER_ADMIN,
+        isTemporaryPassword: false,
+        createdAt: Timestamp.now()
+      };
+      setDoc(doc(db, 'users', uid), superAdminData).catch(console.error);
+      return superAdminData;
+    }
+
+    return null;
   }
 
   getCurrentUser(): User | null {

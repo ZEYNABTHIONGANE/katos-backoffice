@@ -83,7 +83,7 @@ export class InvitationService {
   }
 
   // Valider et utiliser un code d'invitation
-  async validateAndUseCode(code: string, usedBy: string): Promise<{ valid: boolean; error?: string }> {
+  async validateAndUseCode(code: string, usedBy: string): Promise<{ valid: boolean; error?: string; codeId?: string }> {
     try {
       const codesRef = collection(db, this.COLLECTION_NAME);
       const q = query(codesRef, where('code', '==', code));
@@ -117,7 +117,7 @@ export class InvitationService {
         usedBy
       });
 
-      return { valid: true };
+      return { valid: true, codeId: codeDoc.id };
     } catch (error) {
       return { valid: false, error: 'Erreur lors de la validation du code' };
     }

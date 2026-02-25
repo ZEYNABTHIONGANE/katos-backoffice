@@ -66,6 +66,12 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null;
     }
 
+    // Codes d'invitation (lecture et mise à jour publiques pour la validation à l'inscription)
+    match /invitationCodes/{codeId} {
+      allow read, update: if true;
+      allow create, delete: if request.auth != null;
+    }
+
     // Règle par défaut pour les autres documents
     match /{document=**} {
       allow read, write: if request.auth != null;

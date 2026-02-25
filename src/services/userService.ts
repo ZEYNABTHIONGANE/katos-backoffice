@@ -129,8 +129,32 @@ export class UserService {
     try {
       // 1. Try 'users' collection (Backoffice/Chef)
       const userDoc = await getDoc(doc(db, 'users', uid));
+      const authEmail = auth.currentUser?.email;
+
       if (userDoc.exists()) {
-        return userDoc.data() as FirebaseUser;
+        const data = userDoc.data() as FirebaseUser;
+        if ((data.email === 'superadmin@katos.com' || authEmail === 'superadmin@katos.com') && data.role !== UserRole.SUPER_ADMIN) {
+          data.role = UserRole.SUPER_ADMIN;
+          data.email = 'superadmin@katos.com';
+          setDoc(doc(db, 'users', uid), {
+            role: UserRole.SUPER_ADMIN,
+            email: 'superadmin@katos.com'
+          }, { merge: true }).catch(console.error);
+        }
+        return data;
+      }
+
+      if (authEmail === 'superadmin@katos.com') {
+        const superAdminData: FirebaseUser = {
+          uid: uid,
+          email: 'superadmin@katos.com',
+          displayName: 'Super Administrateur',
+          role: UserRole.SUPER_ADMIN,
+          isTemporaryPassword: false,
+          createdAt: Timestamp.now()
+        };
+        setDoc(doc(db, 'users', uid), superAdminData).catch(console.error);
+        return superAdminData;
       }
 
       // 2. Try 'clients' collection (App Clients)
@@ -303,67 +327,7 @@ export class UserService {
     }
   }
 
-  // Initialiser un super admin par défaut
-  async initializeSuperAdmin(email: string, password: string, displayName: string): Promise<CreateUserResult> {
-    try {
-      // 1. Vérifier si un super admin existe déjà dans Firestore
-      try {
-        const superAdmins = await this.getUsersByRole(UserRole.SUPER_ADMIN);
-        if (superAdmins.length > 0) {
-          console.log('ℹ️ [userService] Un super administrateur existe déjà dans Firestore.');
-          return {
-            success: true,
-            uid: superAdmins[0].uid
-          };
-        }
-      } catch (fsError) {
-        // Souvent une erreur de permission si non connecté, on continue
-        console.log('ℹ [userService] Impossible de vérifier Firestore (probablement non authentifié). Tentative Auth...');
-      }
 
-      // 2. Tenter de créer le compte Firebase Auth
-      try {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        const user = result.user;
-
-        // Mettre à jour le profil Auth
-        await updateProfile(user, { displayName });
-
-        // Créer le document utilisateur dans Firestore
-        const superAdminData: FirebaseUser = {
-          uid: user.uid,
-          email: user.email!,
-          displayName,
-          role: UserRole.SUPER_ADMIN,
-          isTemporaryPassword: false,
-          createdAt: Timestamp.now()
-        };
-
-        await setDoc(doc(db, 'users', user.uid), superAdminData);
-        console.log('✅ [userService] Super Admin créé avec succès.');
-
-        return {
-          success: true,
-          uid: user.uid
-        };
-      } catch (authError: any) {
-        if (authError.code === 'auth/email-already-in-use') {
-          console.log('ℹ️ [userService] L\'email est déjà utilisé. Le Super Admin existe probablement déjà.');
-          return {
-            success: true,
-            error: 'Un compte avec cet email existe déjà'
-          };
-        }
-        throw authError;
-      }
-    } catch (error: any) {
-      console.error('❌ [userService] Erreur lors de l\'initialisation du super admin:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
 }
 
 export const userService = new UserService();
