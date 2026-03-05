@@ -43,8 +43,8 @@ export const TerrainModal: React.FC<TerrainModalProps> = ({
                 setFormData({
                     reference: terrain.reference || '',
                     name: terrain.name || '',
-                    surface: terrain.surface || 0,
-                    price: terrain.price || 0,
+                    surface: terrain.surface ?? null,
+                    price: terrain.price ?? null,
                     currency: terrain.currency || 'FCFA',
                     documentType: terrain.documentType || 'Titre foncier',
                     hasWater: !!terrain.hasWater,
@@ -59,8 +59,8 @@ export const TerrainModal: React.FC<TerrainModalProps> = ({
                 setFormData({
                     reference: '',
                     name: '',
-                    surface: 0,
-                    price: 0,
+                    surface: null,
+                    price: null,
                     currency: 'FCFA',
                     documentType: 'Titre foncier',
                     hasWater: false,
@@ -105,30 +105,26 @@ export const TerrainModal: React.FC<TerrainModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                         label="Référence"
-                        value={formData.reference}
-                        onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                        value={formData.reference ?? ''}
+                        onChange={(e) => setFormData({ ...formData, reference: e.target.value || null })}
                         placeholder="ex: T001"
-                        required
                     />
                     <Input
                         label="Nom du terrain"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        value={formData.name ?? ''}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value || null })}
                         placeholder="ex: Terrain Yenne"
-                        required
                     />
                     <Input
                         label="Zone"
-                        value={formData.zone}
-                        onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
+                        value={formData.zone ?? ''}
+                        onChange={(e) => setFormData({ ...formData, zone: e.target.value || null })}
                         placeholder="ex: Yenne"
-                        required
                     />
                     <Select
                         label="Type de document"
-                        value={formData.documentType}
-                        onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
-                        required
+                        value={formData.documentType ?? ''}
+                        onChange={(e) => setFormData({ ...formData, documentType: e.target.value || null })}
                     >
                         <option value="Titre foncier">Titre foncier</option>
                         <option value="Bail">Bail</option>
@@ -140,16 +136,15 @@ export const TerrainModal: React.FC<TerrainModalProps> = ({
                     <Input
                         label="Surface (m²)"
                         type="number"
-                        value={formData.surface.toString()}
-                        onChange={(e) => setFormData({ ...formData, surface: parseInt(e.target.value) || 0 })}
-                        required
+                        value={formData.surface?.toString() || ''}
+                        onChange={(e) => setFormData({ ...formData, surface: e.target.value ? parseInt(e.target.value) : null })}
                     />
                     <Input
-                        label="Prix (FCFA)"
-                        type="number"
-                        value={formData.price.toString()}
-                        onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
-                        required
+                        label="Prix (FCFA) - Optionnel"
+                        type="text"
+                        value={formData.price?.toString() || ''}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value || null })}
+                        placeholder="ex: 5000000 ou Nous contacter"
                     />
                 </div>
 
@@ -186,16 +181,15 @@ export const TerrainModal: React.FC<TerrainModalProps> = ({
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">Description</label>
                     <textarea
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        value={formData.description ?? ''}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
                         className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         rows={3}
-                        required
                     />
                 </div>
 
                 <MultiImageUploader
-                    images={formData.images}
+                    images={formData.images || []}
                     onChange={(images) => setFormData({ ...formData, images })}
                     label="Images du terrain"
                     maxImages={5}

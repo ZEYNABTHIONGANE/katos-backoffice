@@ -221,8 +221,8 @@ export const Projects: React.FC = () => {
             {terrains.map((terrain) => (
               <Card key={terrain.id} className="overflow-hidden flex flex-col">
                 <ImageCarousel
-                  images={terrain.images}
-                  alt={terrain.name}
+                  images={terrain.images || []}
+                  alt={terrain.name || 'Terrain'}
                   aspectRatio="video"
                   showDots={true}
                   showArrows={true}
@@ -265,7 +265,9 @@ export const Projects: React.FC = () => {
                       <span className="font-semibold mr-1">{terrain.documentType}</span>
                     </div>
                     <div className="flex items-center text-xs font-bold text-primary-600 ml-auto">
-                      {terrain.price?.toLocaleString()} {terrain.currency}
+                      {(!isNaN(Number(terrain.price)) && terrain.price !== null && terrain.price !== '')
+                        ? `${Number(terrain.price).toLocaleString()} ${terrain.currency}`
+                        : (terrain.price || '')}
                     </div>
                   </div>
                 </div>

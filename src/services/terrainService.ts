@@ -17,12 +17,22 @@ import type { FirebaseTerrain } from '../types/firebase';
 export class TerrainService {
     private collectionName = 'terrains';
 
+    private cleanData<T extends object>(data: T): T {
+        const cleaned = { ...data };
+        Object.keys(cleaned).forEach(key => {
+            if (cleaned[key as keyof T] === undefined) {
+                delete cleaned[key as keyof T];
+            }
+        });
+        return cleaned;
+    }
+
     async addTerrain(terrainData: Omit<FirebaseTerrain, 'id' | 'createdAt'>): Promise<string> {
         const terrainRef = collection(db, this.collectionName);
-        const newTerrain = {
+        const newTerrain = this.cleanData({
             ...terrainData,
             createdAt: Timestamp.now()
-        };
+        });
         const docRef = await addDoc(terrainRef, newTerrain);
         return docRef.id;
     }
@@ -40,7 +50,7 @@ export class TerrainService {
 
     async updateTerrain(id: string, updates: Partial<Omit<FirebaseTerrain, 'id' | 'createdAt'>>): Promise<void> {
         const terrainRef = doc(db, this.collectionName, id);
-        await updateDoc(terrainRef, updates);
+        await updateDoc(terrainRef, this.cleanData(updates));
     }
 
     async deleteTerrain(id: string): Promise<void> {

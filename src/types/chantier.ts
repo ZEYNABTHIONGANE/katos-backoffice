@@ -412,12 +412,30 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
         notes: ''
       },
       {
+        id: 'preparation_carrelage',
+        name: 'Préparation des supports',
+        description: 'Nettoyage et mise à niveau des surfaces',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 1,
+        notes: ''
+      },
+      {
         id: 'pose_carrelage',
         name: 'Pose carrelage',
         description: 'Mise en place du carrelage au sol et aux murs',
         status: 'pending',
         progress: 0,
         estimatedDuration: 4,
+        notes: ''
+      },
+      {
+        id: 'jointoiement_carrelage',
+        name: 'Jointoiement',
+        description: 'Réalisation des joints et nettoyage final',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 1,
         notes: ''
       }
     ]
@@ -445,12 +463,30 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
         notes: ''
       },
       {
+        id: 'preparation_etancheite',
+        name: 'Préparation',
+        description: 'Nettoyage et application du primaire',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 1,
+        notes: ''
+      },
+      {
         id: 'travaux_etancheite',
-        name: 'Travaux d\'étanchéité',
-        description: 'Application des solutions d\'étanchéité',
+        name: 'Application Étanchéité',
+        description: 'Pose des membranes ou application du produit',
         status: 'pending',
         progress: 0,
         estimatedDuration: 2,
+        notes: ''
+      },
+      {
+        id: 'tests_etancheite',
+        name: 'Tests de mise en eau',
+        description: 'Vérification de l\'absence de fuites',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 1,
         notes: ''
       }
     ]
@@ -478,12 +514,30 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
         notes: ''
       },
       {
-        id: 'pose_menuiserie',
-        name: 'Pose menuiserie',
-        description: 'Installation des portes et fenêtres',
+        id: 'pose_cadres',
+        name: 'Pose des cadres',
+        description: 'Installation des cadres et précadres',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
+      {
+        id: 'pose_ouvrants',
+        name: 'Pose des ouvrants',
+        description: 'Mise en place des portes et fenêtres',
         status: 'pending',
         progress: 0,
         estimatedDuration: 3,
+        notes: ''
+      },
+      {
+        id: 'reglages_menuiserie',
+        name: 'Réglages et finitions',
+        description: 'Ajustements et pose des accessoires',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 1,
         notes: ''
       }
     ]
@@ -511,12 +565,30 @@ export const KATOS_STANDARD_PHASES: Omit<KatosChantierPhase, 'id' | 'lastUpdated
         notes: ''
       },
       {
-        id: 'pose_faux_plafond',
-        name: 'Pose faux plafond',
-        description: 'Installation de la structure et des plaques',
+        id: 'structure_faux_plafond',
+        name: 'Mise en place structure',
+        description: 'Installation de l\'ossature métallique',
         status: 'pending',
         progress: 0,
         estimatedDuration: 2,
+        notes: ''
+      },
+      {
+        id: 'pose_plaques',
+        name: 'Pose des plaques',
+        description: 'Installation des plaques de plâtre ou dalles',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 2,
+        notes: ''
+      },
+      {
+        id: 'finitions_faux_plafond',
+        name: 'Joints et finitions',
+        description: 'Enduisage des joints et ponçage',
+        status: 'pending',
+        progress: 0,
+        estimatedDuration: 1,
         notes: ''
       }
     ]

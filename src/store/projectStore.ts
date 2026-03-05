@@ -38,7 +38,7 @@ const convertFirebaseProject = (firebaseProject: FirebaseProject): ProjectForApp
   description: firebaseProject.description,
   images: firebaseProject.images,
   type: firebaseProject.type,
-  price: firebaseProject.price || 0,
+  price: typeof firebaseProject.price === 'string' ? Number(firebaseProject.price) : (firebaseProject.price || 0),
   currency: firebaseProject.currency || 'FCFA',
   surface: firebaseProject.surface,
   bedrooms: firebaseProject.bedrooms,

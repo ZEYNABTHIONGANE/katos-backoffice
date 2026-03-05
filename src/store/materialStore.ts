@@ -32,7 +32,7 @@ const convertFirebaseMaterial = (firebaseMaterial: FirebaseMaterial): MaterialFo
   id: firebaseMaterial.id!,
   name: firebaseMaterial.name,
   category: firebaseMaterial.category,
-  price: firebaseMaterial.price,
+  price: typeof firebaseMaterial.price === 'string' ? Number(firebaseMaterial.price) : firebaseMaterial.price,
   image: firebaseMaterial.image,
   supplier: firebaseMaterial.supplier,
   description: firebaseMaterial.description

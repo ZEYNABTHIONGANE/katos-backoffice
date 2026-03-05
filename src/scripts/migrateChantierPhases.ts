@@ -23,14 +23,14 @@ export class ChantierMigrationService {
 
   // Mapper les anciennes phases vers les nouvelles
   private mapLegacyPhaseToKatos(legacyPhase: ChantierPhase): KatosChantierPhase | null {
-    // Mapping basé sur le nom de l'ancienne phase
-    const phaseName = legacyPhase.name.toLowerCase();
-
     // Trouver la phase correspondante dans KATOS_STANDARD_PHASES
-    let katosTemplate = KATOS_STANDARD_PHASES.find(p =>
-      p.name.toLowerCase().includes(phaseName) ||
-      phaseName.includes(p.name.toLowerCase())
-    );
+    const normalize = (s: string) => s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const phaseNameNorm = normalize(legacyPhase.name);
+
+    let katosTemplate = KATOS_STANDARD_PHASES.find(p => {
+      const templateNameNorm = normalize(p.name);
+      return templateNameNorm.includes(phaseNameNorm) || phaseNameNorm.includes(templateNameNorm);
+    });
 
     // Mapping manuel pour les cas spéciaux
     if (!katosTemplate) {
@@ -189,6 +189,8 @@ export class ChantierMigrationService {
           let phasesChanged = false;
 
           // 1. S'assurer que les phases sont au format Katos (avec catégories/steps)
+          const normalize = (s: string) => s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
           let currentPhases = chantier.phases?.map(phase => {
             if (!phase.category) {
               phasesChanged = true;
@@ -198,9 +200,9 @@ export class ChantierMigrationService {
           }).filter(p => p !== null) as KatosChantierPhase[];
 
           // 2. Ajouter les phases Katos manquantes
-          const existingNames = new Set(currentPhases.map(p => p.name));
+          const existingNamesNorm = new Set(currentPhases.map(p => normalize(p.name)));
           KATOS_STANDARD_PHASES.forEach(template => {
-            if (!existingNames.has(template.name)) {
+            if (!existingNamesNorm.has(normalize(template.name))) {
               phasesChanged = true;
               currentPhases.push({
                 ...template,
@@ -212,18 +214,34 @@ export class ChantierMigrationService {
             }
           });
 
-          // 3. Synchroniser l'étape "Approvisionnement" dans chaque phase
+          // 3. Synchroniser toutes les étapes manquantes de chaque phase
           currentPhases = currentPhases.map(phase => {
-            const template = KATOS_STANDARD_PHASES.find(t => t.name === phase.name);
+            const template = KATOS_STANDARD_PHASES.find(t => normalize(t.name) === normalize(phase.name));
             if (template && template.steps) {
-              const supplyTemplate = template.steps.find(s => s.name === 'Approvisionnement');
-              if (supplyTemplate) {
-                const hasSupplyStep = phase.steps?.some(s => s.name === 'Approvisionnement');
-                if (!hasSupplyStep) {
-                  phasesChanged = true;
-                  const newStep = { ...supplyTemplate, id: uuidv4() };
-                  phase.steps = [newStep, ...(phase.steps || [])];
-                }
+              const existingStepNamesNorm = new Set(phase.steps?.map(s => normalize(s.name)) || []);
+              const stepsToAdd = template.steps.filter(s => !existingStepNamesNorm.has(normalize(s.name)));
+
+              if (stepsToAdd.length > 0) {
+                phasesChanged = true;
+                const newSteps = stepsToAdd.map(s => ({
+                  ...s,
+                  id: uuidv4(),
+                  progress: phase.progress // Les nouvelles étapes héritent du progrès actuel pour garder la moyenne intacte
+                }));
+                // Fusionner et trier (ou au moins mettre les nouveaux à la fin s'ils ne sont pas Approvisionnement)
+                // Idéalement on garde l'ordre du template si possible
+                const combinedSteps = [...(phase.steps || [])];
+
+                // On insère l'approvisionnement en premier si elle vient d'être ajoutée
+                newSteps.forEach(newStep => {
+                  if (newStep.name === 'Approvisionnement') {
+                    combinedSteps.unshift(newStep);
+                  } else {
+                    combinedSteps.push(newStep);
+                  }
+                });
+
+                phase.steps = combinedSteps;
               }
             }
             return phase;
@@ -287,9 +305,24 @@ export class ChantierMigrationService {
 
       let migrated = 0;
       const total = snapshot.docs.length;
+      const normalize = (s: string) => s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
       snapshot.docs.forEach(doc => {
-        if (doc.data().migratedToKatosPhases) {
+        const data = doc.data();
+        if (!data.migratedToKatosPhases) return;
+
+        // Vérification plus profonde : a-t-il bien toutes les phases et tous les steps ?
+        const phases = data.phases as any[];
+        if (!phases || phases.length < KATOS_STANDARD_PHASES.length) return;
+
+        const allStepsPresent = phases.every(phase => {
+          const template = KATOS_STANDARD_PHASES.find(t => normalize(t.name) === normalize(phase.name));
+          if (!template || !template.steps) return true;
+          if (!phase.steps || phase.steps.length < template.steps.length) return false;
+          return true;
+        });
+
+        if (allStepsPresent) {
           migrated++;
         }
       });
