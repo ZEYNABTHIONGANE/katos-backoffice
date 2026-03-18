@@ -18,9 +18,22 @@ import type {
 export class AccountingService {
     private schedulesCollection = 'paymentSchedules';
 
-    // Calculer l'acompte (20%)
-    calculateDeposit(totalAmount: number): number {
+    // Calculer l'acompte recommandé selon le type de projet
+    calculateRecommendedDeposit(projectType: string | undefined, totalAmount: number): number {
+        if (!projectType) return Math.round(totalAmount * 0.20);
+
+        const type = projectType.toUpperCase();
+        if (type.includes('F3')) return 3500000;
+        if (type.includes('F4')) return 5000000;
+        if (type.includes('F6')) return 7800000;
+
+        // Par défaut 20% pour les autres (F1, F2, F5, F7+, et constructions personnalisées)
         return Math.round(totalAmount * 0.20);
+    }
+
+    // Calculer l'acompte (20% par défaut ou selon recommandation)
+    calculateDeposit(totalAmount: number, projectType?: string): number {
+        return this.calculateRecommendedDeposit(projectType, totalAmount);
     }
 
     // Calculer le reste à payer après l'acompte

@@ -68,10 +68,14 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
 
   // Initialiser l'acompte par défaut quand la modale s'ouvre
   useEffect(() => {
-    if (showCreateModal && !formData.montantAcompte && clientProject?.price) {
+    if (showCreateModal && !formData.montantAcompte && clientProject) {
+      const recommended = accountingService.calculateRecommendedDeposit(
+        clientProject.type, 
+        clientProject.price
+      );
       setFormData(prev => ({
         ...prev,
-        montantAcompte: Math.round(clientProject.price * 0.20).toString()
+        montantAcompte: recommended.toString()
       }));
     }
   }, [showCreateModal, clientProject, formData.montantAcompte]);
@@ -601,10 +605,14 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
                 value={formData.montantTotal}
                 onChange={(e) => {
                   const newTotal = parseInt(e.target.value) || 0;
+                  const recommended = accountingService.calculateRecommendedDeposit(
+                    clientProject?.type,
+                    newTotal
+                  );
                   setFormData(prev => ({
                     ...prev,
                     montantTotal: e.target.value,
-                    montantAcompte: Math.round(newTotal * 0.20).toString()
+                    montantAcompte: recommended.toString()
                   }));
                 }}
                 placeholder="0"
@@ -622,10 +630,13 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
               onChange={(e) => {
                 const type = e.target.value as 'comptant' | 'echeancier';
                 const total = formData.useCustomAmount ? (parseInt(formData.montantTotal) || 0) : (clientProject?.price || 0);
+                const acompte = type === 'echeancier' 
+                  ? accountingService.calculateRecommendedDeposit(clientProject?.type, total).toString() 
+                  : '';
                 setFormData(prev => ({
                   ...prev,
                   typePaiement: type,
-                  montantAcompte: type === 'echeancier' ? Math.round(total * 0.20).toString() : ''
+                  montantAcompte: acompte
                 }));
               }}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
