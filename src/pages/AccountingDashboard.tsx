@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-    TrendingUp,
     AlertCircle,
     CheckCircle,
     Clock,
     Search,
     Download,
     Bell,
-    Banknote
+    Banknote,
+    Trash2
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -38,6 +38,7 @@ export const AccountingDashboard: React.FC = () => {
     const [filterStatus, setFilterStatus] = useState<'all' | 'overdue' | 'up_to_date'>('all');
     const [activeTab, setActiveTab] = useState<'clients' | 'transactions'>('clients');
     const [globalPayments, setGlobalPayments] = useState<PaymentHistory[]>([]);
+    const [clientNames, setClientNames] = useState<Record<string, string>>({});
     const { projects } = useProjectStore();
 
     // Modal states
@@ -45,6 +46,8 @@ export const AccountingDashboard: React.FC = () => {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<PaymentHistory | null>(null);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; paymentId: string | null }>({ open: false, paymentId: null });
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         loadFinancialData();
@@ -81,6 +84,28 @@ export const AccountingDashboard: React.FC = () => {
             const history = await invoiceService.getAllPaymentHistory();
             setGlobalPayments(history);
 
+            // Resolve client names for all payments
+            const nameMap: Record<string, string> = {};
+            const uniqueClientIds = [...new Set(history.map(p => p.clientId).filter(Boolean))];
+            await Promise.all(
+                uniqueClientIds.map(async (clientId) => {
+                    // First try local store
+                    const localClient = clients.find(c => c.id === clientId);
+                    if (localClient) {
+                        nameMap[clientId] = `${localClient.nom} ${localClient.prenom}`.trim();
+                    } else {
+                        // Fallback: fetch from Firestore directly
+                        const fetched = await invoiceService.getClientById(clientId);
+                        if (fetched) {
+                            nameMap[clientId] = `${fetched.nom} ${fetched.prenom}`.trim();
+                        } else {
+                            nameMap[clientId] = 'Client inconnu';
+                        }
+                    }
+                })
+            );
+            setClientNames(nameMap);
+
         } catch (error) {
             console.error('Error loading financial data:', error);
             toast.error('Erreur lors du chargement des données financières');
@@ -89,9 +114,27 @@ export const AccountingDashboard: React.FC = () => {
         }
     };
 
-    const getClientName = (clientId: string) => {
-        const client = clients.find(c => c.id === clientId);
-        return client ? `${client.nom} ${client.prenom}` : 'Client inconnu';
+    const getClientName = (clientId: string): string => {
+        if (clientNames[clientId]) return clientNames[clientId];
+        const local = clients.find(c => c.id === clientId);
+        if (local) return `${local.nom} ${local.prenom}`.trim();
+        return 'Client inconnu';
+    };
+
+    const handleDeletePayment = async () => {
+        if (!deleteConfirm.paymentId) return;
+        setDeleting(true);
+        try {
+            await invoiceService.deletePaymentHistory(deleteConfirm.paymentId);
+            setGlobalPayments(prev => prev.filter(p => p.id !== deleteConfirm.paymentId));
+            toast.success('Paiement supprimé avec succès');
+        } catch (error) {
+            console.error('Error deleting payment:', error);
+            toast.error('Erreur lors de la suppression du paiement');
+        } finally {
+            setDeleting(false);
+            setDeleteConfirm({ open: false, paymentId: null });
+        }
     };
 
     const getClientProject = (clientId: string) => {
@@ -474,6 +517,14 @@ export const AccountingDashboard: React.FC = () => {
                                                     <Bell className="w-4 h-4 mr-1" />
                                                     Notifier
                                                 </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="text-red-600 hover:text-red-900"
+                                                    onClick={() => setDeleteConfirm({ open: true, paymentId: payment.id ?? null })}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
@@ -513,6 +564,39 @@ export const AccountingDashboard: React.FC = () => {
                     />
                 )
             }
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 rounded-full bg-red-100">
+                                <Trash2 className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900">Confirmer la suppression</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-6">
+                            Êtes-vous sûr de vouloir supprimer ce paiement de l'historique ? Cette action est <strong>irréversible</strong>.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <Button
+                                variant="outline"
+                                onClick={() => setDeleteConfirm({ open: false, paymentId: null })}
+                                disabled={deleting}
+                            >
+                                Annuler
+                            </Button>
+                            <Button
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                onClick={handleDeletePayment}
+                                disabled={deleting}
+                            >
+                                {deleting ? 'Suppression...' : 'Supprimer'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

@@ -324,6 +324,28 @@ export class InvoiceService {
       updatedAt: Timestamp.now()
     });
   }
+
+  // Supprimer un paiement de l'historique (suppression définitive)
+  async deletePaymentHistory(paymentId: string): Promise<void> {
+    const paymentRef = doc(db, this.paymentsCollection, paymentId);
+    await deleteDoc(paymentRef);
+  }
+
+  // Récupérer le nom d'un client depuis Firestore
+  async getClientById(clientId: string): Promise<{ nom: string; prenom: string } | null> {
+    try {
+      const clientRef = doc(db, 'clients', clientId);
+      const clientSnap = await getDoc(clientRef);
+      if (clientSnap.exists()) {
+        const data = clientSnap.data();
+        return { nom: data.nom || '', prenom: data.prenom || '' };
+      }
+      return null;
+    } catch (error) {
+      console.error('Erreur lors de la récupération du client:', error);
+      return null;
+    }
+  }
 }
 
 export const invoiceService = new InvoiceService();

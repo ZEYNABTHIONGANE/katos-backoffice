@@ -66,15 +66,7 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client.id]);
 
-  // Initialiser l'acompte par défaut quand la modale s'ouvre
-  useEffect(() => {
-    if (showCreateModal && !formData.montantAcompte && clientProject?.price) {
-      setFormData(prev => ({
-        ...prev,
-        montantAcompte: Math.round(clientProject.price * 0.20).toString()
-      }));
-    }
-  }, [showCreateModal, clientProject, formData.montantAcompte]);
+  // Pas d'auto-calcul de l'acompte : le champ est libre
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -600,11 +592,9 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
                 type="number"
                 value={formData.montantTotal}
                 onChange={(e) => {
-                  const newTotal = parseInt(e.target.value) || 0;
                   setFormData(prev => ({
                     ...prev,
-                    montantTotal: e.target.value,
-                    montantAcompte: Math.round(newTotal * 0.20).toString()
+                    montantTotal: e.target.value
                   }));
                 }}
                 placeholder="0"
@@ -621,11 +611,9 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
               value={formData.typePaiement}
               onChange={(e) => {
                 const type = e.target.value as 'comptant' | 'echeancier';
-                const total = formData.useCustomAmount ? (parseInt(formData.montantTotal) || 0) : (clientProject?.price || 0);
                 setFormData(prev => ({
                   ...prev,
-                  typePaiement: type,
-                  montantAcompte: type === 'echeancier' ? Math.round(total * 0.20).toString() : ''
+                  typePaiement: type
                 }));
               }}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -643,7 +631,7 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Montant de l'acompte (Apport)"
+                  label="Acompte versé (montant libre)"
                   type="number"
                   value={formData.montantAcompte}
                   onChange={(e) => setFormData(prev => ({
@@ -651,6 +639,7 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
                     montantAcompte: e.target.value
                   }))}
                   min="0"
+                  placeholder="Ex: 500000"
                 />
                 <Input
                   label="Nombre de mensualités"
