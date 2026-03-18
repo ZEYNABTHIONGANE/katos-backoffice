@@ -89,13 +89,12 @@ export class AccountingService {
         projectId: string,
         totalAmount: number,
         months: number = 12,
-        depositAmount?: number,
+        depositAmount: number = 0,
         startDate: Date = new Date()
     ): Promise<string> {
         try {
             // 1. Créer la facture d'acompte
-            // Si depositAmount est undefined on calcule 20%, sinon on prend la valeur (qui peut être 0)
-            const finalDepositAmount = (depositAmount !== undefined) ? depositAmount : this.calculateDeposit(totalAmount);
+            const finalDepositAmount = depositAmount > 0 ? depositAmount : this.calculateDeposit(totalAmount);
             const invoiceNumber = await invoiceService.generateInvoiceNumber();
 
             const depositInvoice: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> = {
