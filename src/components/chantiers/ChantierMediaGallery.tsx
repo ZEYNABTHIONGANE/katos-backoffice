@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../ui/Card';
 import { Modal } from '../ui/Modal';
-import { Camera, Music, Play, Pause, ExternalLink, X } from 'lucide-react';
+import { Camera, Music, Play, Pause, ExternalLink, X, Trash2 } from 'lucide-react';
 import { feedbackService } from '../../services/feedbackService';
+import { chantierService } from '../../services/chantierService';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import { useConfirm } from '../../hooks/useConfirm';
+import { toast } from 'react-toastify';
 import type { ProgressPhoto } from '../../types/chantier';
 import type { VoiceNoteFeedback } from '../../types/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,6 +31,7 @@ export const ChantierMediaGallery: React.FC<ChantierMediaGalleryProps> = ({
     const [playingId, setPlayingId] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [selectedMedia, setSelectedMedia] = useState<any | null>(null);
+    const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
 
     useEffect(() => {
         if (isOpen && chantierId) {
@@ -54,19 +59,46 @@ export const ChantierMediaGallery: React.FC<ChantierMediaGalleryProps> = ({
         }
     };
 
+    const handleDeleteMedia = (item: any) => {
+        confirm(
+            async () => {
+                try {
+                    if (item.mediaType === 'audio') {
+                        await feedbackService.deleteVoiceNote(chantierId, item.id);
+                    } else {
+                        await chantierService.deleteGalleryItem(chantierId, item.id);
+                    }
+                    toast.success('Média supprimé avec succès');
+                    if (selectedMedia?.id === item.id) {
+                        setSelectedMedia(null);
+                    }
+                } catch (error: any) {
+                    console.error('Erreur lors de la suppression du média:', error);
+                    toast.error(error.message || 'Erreur lors de la suppression');
+                }
+            },
+            {
+                title: 'Supprimer le média',
+                message: 'Êtes-vous sûr de vouloir supprimer ce média ? Cette action est irréversible et le média sera supprimé de toutes les phases du projet.',
+                confirmText: 'Supprimer',
+                type: 'danger'
+            }
+        );
+    };
+
     const filteredMedia = React.useMemo(() => {
         const photos = gallery.map(p => {
             const isVideo = p.type === 'video' || /\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(p.url);
             let thumbnailUrl = p.url;
 
             if (isVideo) {
-                if (p.thumbnailUrl) {
-                    thumbnailUrl = p.thumbnailUrl;
-                } else if (p.url.includes('cloudinary.com')) {
+                if (p.url.includes('cloudinary.com')) {
                     const urlParts = p.url.split('?');
                     const baseUrl = urlParts[0];
                     const queryParams = urlParts[1] ? `?${urlParts[1]}` : '';
                     thumbnailUrl = baseUrl.replace(/\.[^/.]+$/, ".jpg") + queryParams;
+                } else if (p.thumbnailUrl) {
+                    thumbnailUrl = p.thumbnailUrl;
                 }
             }
 
@@ -166,12 +198,10 @@ export const ChantierMediaGallery: React.FC<ChantierMediaGalleryProps> = ({
 
                                     {item.mediaType === 'video' && (
                                         <div className="w-full h-full relative cursor-pointer group/video" onClick={() => setSelectedMedia(item)}>
-                                            <video
-                                                src={`${item.url}#t=0.1`}
-                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/video:scale-110"
-                                                muted
-                                                playsInline
-                                                preload="metadata"
+                                            <img
+                                                src={item.thumbnailUrl}
+                                                alt={item.description}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover/video:scale-110"
                                             />
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/video:bg-black/40 transition-all z-10">
                                                 <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover/video:scale-110 transition-transform shadow-xl">
@@ -225,17 +255,28 @@ export const ChantierMediaGallery: React.FC<ChantierMediaGalleryProps> = ({
                                     )}
 
                                     {/* Link icon for visual media */}
-                                    {(item.mediaType === 'image' || item.mediaType === 'video') && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                window.open(item.url, '_blank');
-                                            }}
-                                            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/10 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <ExternalLink size={14} className="text-white" />
-                                        </button>
-                                    )}
+                                        <div className="absolute top-2 right-2 flex gap-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.open(item.url, '_blank');
+                                                }}
+                                                className="p-1.5 rounded-full bg-black/50 backdrop-blur-md hover:bg-black/70 text-white transition-colors border border-white/20"
+                                                title="Ouvrir dans un nouvel onglet"
+                                            >
+                                                <ExternalLink size={14} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteMedia(item);
+                                                }}
+                                                className="p-1.5 rounded-full bg-red-600 backdrop-blur-md hover:bg-red-700 text-white transition-colors border border-white/20 shadow-lg"
+                                                title="Supprimer"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                 </motion.div>
                             ))}
                         </AnimatePresence>
@@ -296,6 +337,18 @@ export const ChantierMediaGallery: React.FC<ChantierMediaGalleryProps> = ({
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={handleClose}
+                onConfirm={handleConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                confirmText={confirmState.confirmText}
+                cancelText={confirmState.cancelText}
+                type={confirmState.type}
+                loading={confirmState.loading}
+            />
         </>
     );
 };

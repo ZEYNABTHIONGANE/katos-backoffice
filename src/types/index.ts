@@ -70,7 +70,7 @@ export interface ClientDocument {
 
 export interface Notification {
   id: string;
-  type: 'document_upload' | 'material_selection' | 'client_update' | 'payment';
+  type: 'document_upload' | 'material_selection' | 'client_update' | 'payment' | 'photo' | 'video' | 'chat';
   title: string;
   message: string;
   isRead: boolean;

@@ -2,21 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { Button } from './Button';
 import { notificationService } from '../../services/notificationService';
+import { useAuthStore } from '../../store/authStore';
 import type { Notification } from '../../types';
 
 export const NotificationDropdown: React.FC = () => {
+  const { user } = useAuthStore();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsubscribe = notificationService.subscribeToNotifications((notifications) => {
+    if (!user?.uid) return;
+
+    const unsubscribe = notificationService.subscribeToNotifications(user.uid, (notifications) => {
       setNotifications(notifications);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.uid]);
 
   // Fermer le dropdown quand on clique à l'extérieur
   useEffect(() => {
@@ -42,9 +46,10 @@ export const NotificationDropdown: React.FC = () => {
   };
 
   const handleMarkAllAsRead = async () => {
+    if (!user?.uid) return;
     setLoading(true);
     try {
-      await notificationService.markAllAsRead();
+      await notificationService.markAllAsRead(user.uid);
     } catch (error) {
       console.error('Erreur lors du marquage de toutes les notifications:', error);
     } finally {
@@ -108,7 +113,8 @@ export const NotificationDropdown: React.FC = () => {
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                  onClick={(e) => !notification.isRead && handleMarkAsRead(notification.id, e)}
+                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
                     !notification.isRead ? 'bg-blue-50' : ''
                   }`}
                 >

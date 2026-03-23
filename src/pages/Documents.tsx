@@ -213,6 +213,7 @@ export function Documents() {
           await unifiedDocumentService.deleteDocument(
             document.id!,
             userData?.uid || 'admin',
+            document.chantierId,
             'Suppression par l\'administrateur'
           );
           toast.success('Document supprimé avec succès');

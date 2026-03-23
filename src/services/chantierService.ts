@@ -27,6 +27,23 @@ import { v4 as uuidv4 } from 'uuid';
 export class ChantierService {
   private readonly COLLECTION_NAME = 'chantiers';
 
+  // Nettoyer un objet pour Firestore (enlever les undefined)
+  private cleanObject(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (obj instanceof Timestamp) return obj;
+    if (Array.isArray(obj)) return obj.map(item => this.cleanObject(item));
+    if (typeof obj !== 'object') return obj;
+
+    const cleanedObj: any = {};
+    Object.keys(obj).forEach(key => {
+      const val = obj[key];
+      if (val !== undefined) {
+        cleanedObj[key] = this.cleanObject(val);
+      }
+    });
+    return cleanedObj;
+  }
+
   // Créer un nouveau chantier à partir d'un template de projet
   async createChantierFromTemplate(
     clientId: string,
@@ -369,6 +386,45 @@ export class ChantierService {
         gallery: [...chantier.gallery, newPhoto],
         updatedAt: Timestamp.now()
       });
+
+      // Notifier le client et le backoffice
+      try {
+        const { notificationService } = await import('./notificationService');
+        const phaseName = updatedPhases.find(p => p.id === phaseId)?.name;
+        const mediaType = photoUrl.match(/\.(mp4|mov|avi|webm|mkv)(\?|$)/i) ? 'video' : 'photo';
+
+        // 1. Notifier le client
+        if (chantier.clientId) {
+          await notificationService.notifyMediaUploaded(
+            chantier.clientId,
+            mediaType,
+            chantier.name,
+            phaseName,
+            'client'
+          );
+        }
+
+        // 2. Notifier les admins
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
+        const { db } = await import('../config/firebase');
+        const adminsQuery = query(
+          collection(db, 'users'), 
+          where('role', 'in', ['admin', 'super_admin'])
+        );
+        const adminDocs = await getDocs(adminsQuery);
+        
+        for (const adminDoc of adminDocs.docs) {
+          await notificationService.notifyMediaUploaded(
+            adminDoc.id,
+            mediaType,
+            chantier.name,
+            phaseName,
+            'backoffice'
+          );
+        }
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi des notifications média:', error);
+      }
     } catch (error) {
       console.error('Erreur lors de l\'ajout de la photo:', error);
       throw error;
@@ -457,13 +513,78 @@ export class ChantierService {
   async updateChantier(chantierId: string, updates: Partial<FirebaseChantier>): Promise<void> {
     try {
       const chantierRef = doc(db, this.COLLECTION_NAME, chantierId);
+      
+      // Nettoyer les données pour éviter les erreurs "undefined"
+      const cleanedUpdates = this.cleanObject(updates);
+      
       await updateDoc(chantierRef, {
-        ...updates,
+        ...cleanedUpdates,
         updatedAt: Timestamp.now()
       });
     } catch (error) {
       console.error('Erreur lors de la mise à jour du chantier:', error);
       throw error;
+    }
+  }
+
+  // Supprimer un média de la galerie et des phases/étapes
+  async deleteGalleryItem(chantierId: string, mediaId: string): Promise<void> {
+    try {
+      if (!chantierId) throw new Error('ID du chantier manquant');
+      if (!mediaId) throw new Error('ID du média manquant');
+
+      const chantier = await this.getChantierById(chantierId);
+      if (!chantier) {
+        throw new Error('Chantier non trouvé');
+      }
+
+      // Initialiser la galerie si elle n'existe pas
+      const gallery = chantier.gallery || [];
+
+      // Trouver l'URL du média à supprimer pour le nettoyer des phases
+      const mediaToDelete = gallery.find(m => m.id === mediaId);
+      if (!mediaToDelete) {
+        throw new Error(`Média ${mediaId} non trouvé dans ce projet`);
+      }
+
+      const mediaUrl = mediaToDelete.url;
+
+      // 1. Supprimer de la galerie
+      const updatedGallery = gallery.filter(m => m.id !== mediaId);
+
+      // 2. Supprimer de toutes les phases et étapes
+      const updatedPhases = (chantier.phases || []).map(phase => {
+        // Supprimer de la phase
+        const phasePhotos = (phase.photos || []).filter(url => url !== mediaUrl);
+        
+        // Supprimer des étapes si elles existent
+        let updatedSteps = phase.steps;
+        if (phase.steps && Array.isArray(phase.steps)) {
+          updatedSteps = phase.steps.map(step => ({
+            ...step,
+            photos: (step.photos || []).filter(url => url !== mediaUrl)
+          }));
+        }
+
+        return {
+          ...phase,
+          photos: phasePhotos,
+          steps: updatedSteps,
+          lastUpdated: Timestamp.now(),
+          updatedBy: 'admin'
+        };
+      });
+
+      await this.updateChantier(chantierId, this.cleanObject({
+        gallery: updatedGallery,
+        phases: updatedPhases,
+        updatedAt: Timestamp.now()
+      }));
+
+      console.log(`Média ${mediaId} supprimé avec succès du chantier ${chantierId}`);
+    } catch (error: any) {
+      console.error('Erreur lors de la suppression du média:', error);
+      throw new Error(error.message || 'Erreur lors de la suppression');
     }
   }
 

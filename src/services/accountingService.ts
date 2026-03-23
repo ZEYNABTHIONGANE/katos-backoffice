@@ -28,7 +28,7 @@ export class AccountingService {
         return this.calculateRecommendedDeposit(projectType, totalAmount);
     }
 
-    // Calculer le reste à payer après l'acompte
+    // Calculer le reliquat à payer après l'acompte
     calculateRemainingAfterDeposit(totalAmount: number): number {
         return totalAmount - this.calculateDeposit(totalAmount);
     }
@@ -229,7 +229,7 @@ export class AccountingService {
                         installment.status = 'paid';
                         installment.paidDate = Timestamp.fromDate(paymentDate);
                     } else {
-                        installment.status = 'pending'; // Reste partiel
+                        installment.status = 'pending'; // Reliquat partiel
                     }
 
                     // Ajouter des métadonnées de paiement si nécessaire

@@ -8,6 +8,11 @@ import { useRealtimeChantier } from '../hooks/useRealtimeChantier';
 import { useUserNames } from '../hooks/useUserNames';
 import { VoiceNoteList } from '../components/chantiers/VoiceNoteList';
 import { ChantierMediaGallery } from '../components/chantiers/ChantierMediaGallery';
+import { chantierService } from '../services/chantierService';
+import { useConfirm } from '../hooks/useConfirm';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { toast } from 'react-toastify';
+import { Trash2 } from 'lucide-react';
 import type { ChantierStatus, KatosChantierPhase, PhaseStep } from '../types/chantier';
 
 export const ChantierDetail: React.FC = () => {
@@ -15,6 +20,7 @@ export const ChantierDetail: React.FC = () => {
   const navigate = useNavigate();
   const [isMediaGalleryOpen, setIsMediaGalleryOpen] = React.useState(false);
   const [selectedMedia, setSelectedMedia] = React.useState<any | null>(null);
+  const { confirmState, confirm, handleConfirm, handleClose } = useConfirm();
 
   const {
     chantier,
@@ -26,8 +32,27 @@ export const ChantierDetail: React.FC = () => {
     phasesActives,
     totalEquipe,
     totalPhotos,
-
   } = useRealtimeChantier(id || null);
+
+  const handleDeleteMedia = (mediaId: string) => {
+    confirm(
+      async () => {
+        try {
+          await chantierService.deleteGalleryItem(id!, mediaId);
+          toast.success('Média supprimé avec succès');
+        } catch (error) {
+          console.error('Erreur lors de la suppression:', error);
+          toast.error('Erreur lors de la suppression');
+        }
+      },
+      {
+        title: 'Supprimer le média',
+        message: 'Êtes-vous sûr de vouloir supprimer ce média ? Cette action est irréversible et le média sera supprimé de toutes les phases du projet.',
+        confirmText: 'Supprimer',
+        type: 'danger'
+      }
+    );
+  };
 
   // Collecter tous les IDs utilisateurs pour récupérer leurs noms
   const userIds = React.useMemo(() => {
@@ -97,9 +122,7 @@ export const ChantierDetail: React.FC = () => {
     let useVideoTag = false;
 
     if (isVideo) {
-      if (photo.thumbnailUrl) {
-        thumbnailUrl = photo.thumbnailUrl;
-      } else if (photo.url.includes('cloudinary.com')) {
+      if (photo.url.includes('cloudinary.com')) {
         // Astuce Cloudinary: changer l'extension pour avoir une image jpg
         // Attention aux query params (ex: ?alt=media&token=...)
         const urlParts = photo.url.split('?');
@@ -109,6 +132,8 @@ export const ChantierDetail: React.FC = () => {
         // Remplace l'extension à la fin de l'URL de base
         const newBaseUrl = baseUrl.replace(/\.[^/.]+$/, ".jpg");
         thumbnailUrl = `${newBaseUrl}${queryParams}`;
+      } else if (photo.thumbnailUrl) {
+        thumbnailUrl = photo.thumbnailUrl;
       } else {
         // Fallback: use video tag to display the first frame
         useVideoTag = true;
@@ -159,6 +184,16 @@ export const ChantierDetail: React.FC = () => {
           </div>
         )}
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg pointer-events-none" />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDeleteMedia(photo.id);
+          }}
+          className="absolute top-1 right-1 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          title="Supprimer"
+        >
+          <Trash2 size={12} />
+        </button>
       </div>
     );
   };
@@ -564,6 +599,18 @@ export const ChantierDetail: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        type={confirmState.type}
+        loading={confirmState.loading}
+      />
     </div>
   );
 };

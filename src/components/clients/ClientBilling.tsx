@@ -309,7 +309,7 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
                 <p className="text-lg font-semibold text-green-600">{formatCurrency(paymentDashboard.totalPaid)}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reste à payer</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reliquat à payer</label>
                 <p className="text-lg font-semibold text-blue-600">{formatCurrency(paymentDashboard.totalRemaining)}</p>
               </div>
             </div>
@@ -366,7 +366,7 @@ export const ClientBilling: React.FC<ClientBillingProps> = ({ client }) => {
                                   <div className="text-xs text-gray-500 space-y-1">
                                     <p>Montant total : {formatCurrency(inst.amount)}</p>
                                     <p>Déjà payé : <span className="text-green-600 font-medium">{formatCurrency(inst.paidAmount || 0)}</span></p>
-                                    <p>Reste à percevoir : <span className="text-blue-600 font-medium">{formatCurrency(inst.amount - (inst.paidAmount || 0))}</span></p>
+                                    <p>Reliquat à percevoir : <span className="text-blue-600 font-medium">{formatCurrency(inst.amount - (inst.paidAmount || 0))}</span></p>
                                   </div>
                                   {inst.paidDate && (
                                     <p className="text-xs text-green-600 italic mt-2 flex items-center gap-1">

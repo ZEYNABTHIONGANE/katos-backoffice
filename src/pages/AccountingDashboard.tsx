@@ -329,7 +329,7 @@ export const AccountingDashboard: React.FC = () => {
                             </div>
                         </div>
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Reste à Recouvrer</p>
+                            <p className="text-sm font-medium text-gray-500">Reliquat à Recouvrer</p>
                             <div className="flex items-baseline mt-1">
                                 <p className="text-2xl font-bold text-orange-600">{formatCurrency(globalStats.totalExpected - globalStats.totalCollected)}</p>
                             </div>
@@ -378,7 +378,7 @@ export const AccountingDashboard: React.FC = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projet</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Payé</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Reste</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Reliquat</th>
                                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>

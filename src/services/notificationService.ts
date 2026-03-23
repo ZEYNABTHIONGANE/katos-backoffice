@@ -9,17 +9,34 @@ import {
   where,
   getDocs,
   addDoc,
+  getDoc,
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { Notification } from '../types';
 
 export const notificationService = {
-  // Écouter les notifications en temps réel
-  subscribeToNotifications(callback: (notifications: Notification[]) => void) {
+  // Résoudre un clientId (collection 'clients') en userId (UID Firebase Auth)
+  async getClientUserId(clientId: string): Promise<string | null> {
+    try {
+      if (!clientId) return null;
+      const clientDoc = await getDoc(doc(db, 'clients', clientId));
+      if (clientDoc.exists()) {
+        const clientData = clientDoc.data();
+        return clientData.userId || null;
+      }
+      return null;
+    } catch (error) {
+      console.error('Erreur lors de la résolution du userId du client:', error);
+      return null;
+    }
+  },
+
+  // Écouter les notifications en temps réel pour un utilisateur spécifique
+  subscribeToNotifications(userId: string, callback: (notifications: Notification[]) => void) {
     const q = query(
       collection(db, 'notifications'),
-      orderBy('createdAt', 'desc'),
+      where('userId', '==', userId),
       limit(50)
     );
 
@@ -29,7 +46,18 @@ export const notificationService = {
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
       })) as Notification[];
+
+      // Sort in memory to avoid needing a composite index
+      notifications.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
       callback(notifications);
+    }, (error) => {
+      console.error('Erreur lors de l\'écoute des notifications:', error);
+      callback([]);
     });
   },
 
@@ -45,11 +73,12 @@ export const notificationService = {
     }
   },
 
-  // Marquer toutes les notifications comme lues
-  async markAllAsRead(): Promise<void> {
+  // Marquer toutes les notifications comme lues pour un utilisateur
+  async markAllAsRead(userId: string): Promise<void> {
     try {
       const q = query(
         collection(db, 'notifications'),
+        where('userId', '==', userId),
         where('isRead', '==', false)
       );
 
@@ -105,8 +134,14 @@ export const notificationService = {
         break;
     }
 
+    const userId = await this.getClientUserId(clientId);
+    if (!userId) {
+      console.warn(`Impossible d'envoyer le rappel de paiement : aucun userId pour le client ${clientId}`);
+      return;
+    }
+
     await this.createNotification({
-      userId: clientId,
+      userId,
       type: 'payment',
       title,
       message,
@@ -126,6 +161,12 @@ export const notificationService = {
         return '👤';
       case 'payment':
         return '💰';
+      case 'photo':
+        return '📷';
+      case 'video':
+        return '🎥';
+      case 'chat':
+        return '💬';
       default:
         return '🔔';
     }
@@ -142,6 +183,12 @@ export const notificationService = {
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'payment':
         return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'photo':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'video':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'chat':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -185,13 +232,96 @@ export const notificationService = {
   ) {
     const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0 }).format(amount) + ' FCFA';
 
+    const userId = await this.getClientUserId(clientId);
+    if (!userId) {
+      console.warn(`Impossible d'envoyer la notification de paiement : aucun userId pour le client ${clientId}`);
+      return;
+    }
+
     await this.createNotification({
-      userId: clientId,
+      userId,
       type: 'payment',
       title: 'Paiement reçu',
       message: `Nous avons bien reçu votre paiement de ${formattedAmount} ${description}. Vous pouvez consulter votre reçu dans l'application.`,
       isRead: false,
       link: '/billing'
+    });
+  },
+
+  // Notifier le client qu'un média a été ajouté
+  async notifyMediaUploaded(
+    targetId: string, // clientId or userId depending on role
+    type: 'photo' | 'video' | 'document',
+    projectName: string,
+    phaseName?: string,
+    recipientRole: 'client' | 'backoffice' = 'client'
+  ) {
+    if (recipientRole === 'backoffice') {
+      return; // Désactivé selon la demande utilisateur
+    }
+
+    const typeLabel = type === 'photo' ? 'une photo' : type === 'video' ? 'une vidéo' : 'un document';
+    const senderLabel = "L'équipe";
+    
+    // Si c'est pour le backoffice et que le message vient de l'équipe (par ex. Chef)
+    // l'utilisateur veut "L'équipe a ajouté une vidéo au projet ..."
+    // On va ajuster senderLabel si besoin. Ici on suppose que staff-to-staff = "L'équipe"
+    
+    const locationInfo = (recipientRole === 'client' && phaseName) 
+      ? ` de la phase "${phaseName}"` 
+      : ` au projet "${projectName}"`;
+
+    let userId: string | null = targetId;
+    if (recipientRole === 'client') {
+      userId = await this.getClientUserId(targetId);
+    }
+    
+    if (!userId) {
+      console.warn(`Impossible d'envoyer la notification de média : aucun userId valide pour ${targetId}`);
+      return;
+    }
+
+    await this.createNotification({
+      userId,
+      type: type as any,
+      title: 'Nouveau média ajouté',
+      message: `${senderLabel} a ajouté ${typeLabel}${locationInfo}.`,
+      isRead: false,
+      link: type === 'document' ? '/documents' : '/chantier'
+    });
+  },
+
+  // Notifier le client d'un nouveau message
+  async notifyNewMessage(
+    targetId: string, // clientId or userId depending on role
+    senderName: string,
+    messagePreview: string,
+    projectName?: string,
+    recipientRole: 'client' | 'backoffice' = 'client'
+  ) {
+    if (recipientRole === 'backoffice') {
+      return; // Désactivé selon la demande utilisateur
+    }
+
+    const projectInfo = projectName ? ` concernant le projet "${projectName}"` : '';
+
+    let userId: string | null = targetId;
+    if (recipientRole === 'client') {
+      userId = await this.getClientUserId(targetId);
+    }
+
+    if (!userId) {
+      console.warn(`Impossible d'envoyer la notification de message : aucun userId valide pour ${targetId}`);
+      return;
+    }
+
+    await this.createNotification({
+      userId,
+      type: 'chat',
+      title: 'Nouveau message',
+      message: `Vous avez un nouveau message de ${senderName}${projectInfo}.`,
+      isRead: false,
+      link: '/chat'
     });
   }
 };

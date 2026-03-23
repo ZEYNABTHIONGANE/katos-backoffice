@@ -129,7 +129,7 @@ export const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({
                             <p className="font-semibold text-green-700">{formatCurrency(alreadyPaid)}</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-xs text-blue-500 mb-0.5">Reste à percevoir</p>
+                            <p className="text-xs text-blue-500 mb-0.5">Reliquat à percevoir</p>
                             <p className="font-semibold text-orange-600">{formatCurrency(remaining)}</p>
                         </div>
                     </div>
@@ -167,7 +167,7 @@ export const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({
                                 <div>
                                     {isOverpayment ? (
                                         <p>
-                                            <strong>Versement supérieur au restant dû.</strong>
+                                            <strong>Versement supérieur au reliquat dû.</strong>
                                             {' '}Le surplus de{' '}
                                             <strong>{formatCurrency(enteredAmount - remaining)}</strong>
                                             {' '}sera appliqué sur les prochaines échéances.
@@ -176,7 +176,7 @@ export const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({
                                         <>
                                             <p>Après ce versement : <strong>Total payé → {formatCurrency(newTotal)}</strong></p>
                                             {newRemaining > 0 && (
-                                                <p>Il restera à percevoir : <strong>{formatCurrency(newRemaining)}</strong></p>
+                                                <p>Reliquat à percevoir : <strong>{formatCurrency(newRemaining)}</strong></p>
                                             )}
                                             {newRemaining === 0 && (
                                                 <p className="font-semibold">Cette échéance sera entièrement soldée ✔</p>

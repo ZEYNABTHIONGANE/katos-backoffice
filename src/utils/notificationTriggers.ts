@@ -11,6 +11,8 @@ export const notificationTriggers = {
     documentName: string,
     documentType: 'plan' | 'contract' | 'photo' | 'other'
   ) {
+    return; // Désactivé selon la demande utilisateur
+    /*
     const typeLabels = {
       plan: 'un plan',
       contract: 'un contrat',
@@ -18,10 +20,15 @@ export const notificationTriggers = {
       other: 'un document'
     };
 
+    const isMedia = documentType === 'photo';
+    const sender = isMedia ? "L'équipe" : clientName;
+    const action = isMedia ? "a ajouté" : "a uploadé";
+    const context = isMedia ? ` pour ${clientName}` : "";
+
     await notificationService.createNotification({
       type: 'document_upload',
       title: 'Nouveau document uploadé',
-      message: `${clientName} a uploadé ${typeLabels[documentType]} : "${documentName}"`,
+      message: `${sender} ${action} ${typeLabels[documentType]} : "${documentName}"${context}`,
       clientId,
       clientName,
       isRead: false,
@@ -30,6 +37,7 @@ export const notificationTriggers = {
         documentType
       }
     });
+    */
   },
 
   // Notification lors de la sélection d'un matériau
@@ -40,6 +48,8 @@ export const notificationTriggers = {
     materialId: string,
     quantity?: number
   ) {
+    return; // Désactivé selon la demande utilisateur
+    /*
     const quantityText = quantity ? ` (${quantity} unité${quantity > 1 ? 's' : ''})` : '';
 
     await notificationService.createNotification({
@@ -55,6 +65,7 @@ export const notificationTriggers = {
         quantity
       }
     });
+    */
   },
 
   // Notification lors de la mise à jour du profil client
@@ -63,6 +74,8 @@ export const notificationTriggers = {
     clientName: string,
     updateType: 'profile' | 'project' | 'preferences'
   ) {
+    return; // Désactivé selon la demande utilisateur
+    /*
     const updateLabels = {
       profile: 'son profil',
       project: 'les détails de son projet',
@@ -80,6 +93,7 @@ export const notificationTriggers = {
         updateType
       }
     });
+    */
   },
 
   // Fonction pour créer des notifications de test (pour démonstration)

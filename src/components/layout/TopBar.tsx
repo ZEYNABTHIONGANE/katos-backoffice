@@ -2,7 +2,6 @@ import React from 'react';
 import { User, Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useLayout } from '../../hooks/useLayout';
-import { NotificationDropdown } from '../ui/NotificationDropdown';
 
 export const TopBar: React.FC = () => {
   const { user } = useAuthStore();
@@ -35,10 +34,8 @@ export const TopBar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right section - Notifications + Profile */}
+        {/* Right section - Profile */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Notifications */}
-          <NotificationDropdown />
 
           {/* User Profile */}
           <div className="flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 hover:from-gray-100 hover:to-gray-150 transition-all duration-300 cursor-pointer group">

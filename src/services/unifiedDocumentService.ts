@@ -61,7 +61,7 @@ export class UnifiedDocumentService {
 
       const docDocRef = await addDoc(docRef, newDocument);
 
-      // 3. Créer une notification pour le client
+      // 3. Créer une notification spécifique pour l'onglet documents (existant)
       await this.createDocumentNotification(
         docDocRef.id,
         clientId,
@@ -74,6 +74,20 @@ export class UnifiedDocumentService {
           senderName: 'Équipe KATOS'
         }
       );
+
+      // 4. Notifier le client dans la cloche de notification principale
+      try {
+        const { notificationService } = await import('./notificationService');
+        await notificationService.notifyMediaUploaded(
+          clientId,
+          'document',
+          'de votre projet', // Generic fallback
+          undefined,
+          'client'
+        );
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi de la notification principale de document:', error);
+      }
 
       return docDocRef.id;
     } catch (error) {
@@ -261,15 +275,44 @@ export class UnifiedDocumentService {
   }
 
   // Supprimer un document (soft delete)
-  async deleteDocument(documentId: string, deletedBy: string, reason?: string): Promise<void> {
-    const docRef = doc(db, this.documentsCollection, documentId);
-    await updateDoc(docRef, {
-      status: 'deleted',
-      deletedAt: Timestamp.now(),
-      deletedBy,
-      deleteReason: reason,
-      updatedAt: Timestamp.now()
-    });
+  async deleteDocument(documentId: string, deletedBy: string, chantierId?: string, reason?: string): Promise<void> {
+    try {
+      // 1. Tenter d'abord de trouver le document dans la collection 'documents'
+      const docRef = doc(db, this.documentsCollection, documentId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        await updateDoc(docRef, {
+          status: 'deleted',
+          deletedAt: Timestamp.now(),
+          deletedBy,
+          deleteReason: reason,
+          updatedAt: Timestamp.now()
+        });
+        return;
+      }
+
+      // 2. Si non trouvé, c'est peut-être un média de chantier (chef_upload)
+      if (chantierId) {
+        await chantierService.deleteGalleryItem(chantierId, documentId);
+        return;
+      }
+      
+      // Fallback: scanner les chantiers si chantierId n'est pas fourni
+      console.warn("chantierId non fourni pour la suppression d'un media de chantier, scan en cours...");
+      const chantiers = await chantierService.getAllChantiers();
+      for (const chantier of chantiers) {
+        if (chantier.gallery.some(m => m.id === documentId)) {
+          await chantierService.deleteGalleryItem(chantier.id!, documentId);
+          return;
+        }
+      }
+
+      throw new Error("Document ou média non trouvé");
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      throw error;
+    }
   }
 
   // Créer une notification de document

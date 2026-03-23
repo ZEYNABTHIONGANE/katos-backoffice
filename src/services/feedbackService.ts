@@ -62,6 +62,26 @@ export const feedbackService = {
 
             const feedbacksRef = collection(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION);
             const docRef = await addDoc(feedbacksRef, feedbackData);
+
+            // Notifier le client si le message vient d'un staff (pas du client lui-même)
+            try {
+                const { chantierService } = await import('./chantierService');
+                const chantier = await chantierService.getChantierById(chantierId);
+                if (chantier && chantier.clientId !== clientId) {
+                    const { notificationService } = await import('./notificationService');
+                    const senderName = feedbackData.senderName || 'L\'équipe'; // Fallback if name not available yet
+                    await notificationService.notifyNewMessage(
+                        chantier.clientId,
+                        senderName,
+                        "Note vocale",
+                        chantier.name,
+                        'client'
+                    );
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi de la notification de note vocale:', error);
+            }
+
             return docRef.id;
         } catch (error) {
             console.error('Error creating voice note:', error);
@@ -99,6 +119,26 @@ export const feedbackService = {
 
             const feedbacksRef = collection(db, CHANTIERS_COLLECTION, chantierId, FEEDBACKS_SUBCOLLECTION);
             const docRef = await addDoc(feedbacksRef, feedbackData);
+
+            // Notifier le client si le message vient d'un staff (pas du client lui-même)
+            try {
+                const { chantierService } = await import('./chantierService');
+                const chantier = await chantierService.getChantierById(chantierId);
+                if (chantier && chantier.clientId !== clientId) {
+                    const { notificationService } = await import('./notificationService');
+                    const senderName = feedbackData.senderName || 'L\'équipe'; // Fallback if name not available yet
+                    await notificationService.notifyNewMessage(
+                        chantier.clientId,
+                        senderName,
+                        text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+                        chantier.name,
+                        'client'
+                    );
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi de la notification de message:', error);
+            }
+
             return docRef.id;
         } catch (error) {
             console.error('Error creating text message:', error);
